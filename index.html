@@ -108,6 +108,7 @@ input:focus,select:focus{border-color:var(--g)}
 /* modal */
 #modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20}
 #modal .card{max-width:340px;text-align:center;align-items:stretch}
+.sq.pre{box-shadow:inset 0 0 0 100px #e0453f88}
 #modal h2{font-size:26px}
 #modal .card{max-width:400px;max-height:92vh;overflow:auto}
 .tc{display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -208,7 +209,7 @@ function onMsg(m) {
     case 'queued': setWait(true, 'Searching for an opponent…'); break;
     case 'room': setWait(true, 'Share this code with your friend: ' + m.code); break;
     case 'game': startGame(m); break;
-    case 'move': if (G) { applyWire(m.m); G.clock = m.clock; G.t0 = Date.now(); render(); } break;
+    case 'move': if (G) { applyWire(m.m); G.clock = m.clock; G.t0 = Date.now(); render(); runPre(); } break;
     case 'draw': toast('Opponent offers a draw – press ½ Draw to accept'); break;
     case 'over': endGame(m); break;
   }
@@ -294,7 +295,7 @@ function startGame(m) {
   $('modal').classList.add('hide'); show('game'); render();
 }
 function endGame(m) {
-  if (!G) return; G.over = true; G.mate = m.reason === 'checkmate';
+  if (!G) return; G.over = true; G.pre = null; G.mate = m.reason === 'checkmate';
   const r = m.result, mine = G.color === 'w' ? '1-0' : '0-1';
   const title = r === '1/2-1/2' ? 'Draw' : r === mine ? 'You Won! 🏆' : 'You Lost';
   const old = me.rating; me.rating = m.ratings[G.color]; profile();
@@ -311,13 +312,14 @@ function render() {
   const P = c => G[c], nm = c => `${P(c).u} <small>(${P(c).r})</small>`;
   $('nt').innerHTML = nm(top); $('nb').innerHTML = nm(bot); setAv($('avt'), P(top).a, P(top).pic, P(top).emoji); setAv($('avb'), P(bot).a, P(bot).pic, P(bot).emoji);
   const kp = C.inCheck(s) ? C.kingPos(s.b, s.turn) : null;
-  const tgt = G.sel ? G.legal.filter(m => m.fr === G.sel[0] && m.fc === G.sel[1]) : [];
+  const tgt = G.sel ? (G.st.turn === G.color ? G.legal : preMoves()).filter(m => m.fr === G.sel[0] && m.fc === G.sel[1]) : [];
   let h = '';
   for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
     const r = flip ? 7 - i : i, c = flip ? 7 - j : j, p = s.b[r][c];
     let cl = 'sq ' + ((r + c) % 2 ? 'd' : 'l');
     if (G.last && ((G.last.fr === r && G.last.fc === c) || (G.last.tr === r && G.last.tc === c))) cl += ' last';
     if (G.sel && G.sel[0] === r && G.sel[1] === c) cl += ' sel';
+    if (G.pre && ((G.pre.fr === r && G.pre.fc === c) || (G.pre.tr === r && G.pre.tc === c))) cl += ' pre';
     if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate ? ' mate' : '');
     const t = tgt.some(m => m.tr === r && m.tc === c);
     h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
@@ -373,15 +375,16 @@ function promo(ms) {
   $('board').appendChild(o);
 }
 $('board').addEventListener('click', e => {
-  if (!mayMove()) return;
+  if (!G || G.over) return;
   const el = e.target.closest('.sq'); if (!el) return;
   const r = +el.dataset.r, c = +el.dataset.c, p = G.st.b[r][c];
+  if (G.st.turn !== G.color) return preClick(r, c);
   if (G.sel && tryTo(r, c)) return;
   G.sel = (p && p[0] === G.color && !(G.sel && G.sel[0] === r && G.sel[1] === c)) ? [r, c] : null; render();
 });
 $('board').addEventListener('dragstart', e => {
   const el = e.target.closest('.sq');
-  if (!mayMove() || !el) return e.preventDefault();
+  if (!G || G.over || !el) return e.preventDefault();
   const r = +el.dataset.r, c = +el.dataset.c;
   if (G.st.b[r][c][0] !== G.color) return e.preventDefault();
   G.sel = [r, c]; e.dataTransfer.setData('text', 'x'); e.dataTransfer.effectAllowed = 'move';
@@ -390,8 +393,28 @@ $('board').addEventListener('dragover', e => e.preventDefault());
 $('board').addEventListener('drop', e => {
   e.preventDefault(); const el = e.target.closest('.sq');
   if (!el || !G.sel) return;
+  if (G.st.turn !== G.color) return preClick(+el.dataset.r, +el.dataset.c);
   if (!tryTo(+el.dataset.r, +el.dataset.c)) render();
 });
+/* ---------- premove ---------- */
+const preMoves = () => C.legal({ ...G.st, turn: G.color, ep: null });
+function preClick(r, c) {
+  const p = G.st.b[r][c];
+  if (G.sel) {
+    const ms = preMoves().filter(m => m.fr === G.sel[0] && m.fc === G.sel[1] && m.tr === r && m.tc === c);
+    if (ms.length) { const m = ms.find(x => x.pr === 'q') || ms[0]; G.pre = { fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc }; G.sel = null; render(); return; }
+  }
+  G.pre = null;
+  G.sel = (p && p[0] === G.color && !(G.sel && G.sel[0] === r && G.sel[1] === c)) ? [r, c] : null;
+  render();
+}
+function runPre() {
+  if (!G || !G.pre || G.over || G.st.turn !== G.color) return;
+  const q = G.pre; G.pre = null;
+  const m = G.legal.find(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc && (!x.pr || x.pr === 'q'));
+  if (m) doMove(m); else render();
+}
+$('board').addEventListener('contextmenu', e => { e.preventDefault(); if (G && (G.pre || G.sel)) { G.pre = null; G.sel = null; render(); } });
 $('br').onclick = () => { if (!G || G.over || !confirm('Resign this game?')) return; if (G.bot) endGame({ result: G.color === 'w' ? '0-1' : '1-0', reason: 'resignation', ratings: { w: me.rating, b: me.rating } }); else send({ t: 'resign' }); };
 $('bd').onclick = () => { if (!G || G.over) return; if (!G.bot) return send({ t: 'draw' }); const bv = (G.color === 'w' ? -1 : 1) * evalS(G.st); if (bv < -150) endGame({ result: '1/2-1/2', reason: 'agreement', ratings: { w: me.rating, b: me.rating } }); else toast('The bot declined your draw offer'); };
 
@@ -422,7 +445,7 @@ function localMove(m) {
   applyWire(C.wire(m)); render();
   const st = C.status(G.st);
   if (st) return endGame({ result: st.result, reason: st.reason, ratings: { w: me.rating, b: me.rating } });
-  if (G.st.turn !== G.color) setTimeout(botMove, 450);
+  if (G.st.turn !== G.color) setTimeout(botMove, 450); else runPre();
 }
 function botMove() {
   if (!G || !G.bot || G.over || G.st.turn === G.color) return;
