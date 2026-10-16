@@ -86,6 +86,25 @@ input:focus,select:focus{border-color:var(--g)}
 #moves{flex:1;overflow:auto;padding:8px 6px;display:grid;grid-template-columns:36px 1fr 1fr;align-content:start;font-size:15px}
 #moves span{padding:4px 8px;border-radius:4px}#moves .n{color:var(--t)}#moves .cur{background:#454240;font-weight:700}
 .acts{display:flex;gap:8px;padding:10px}.acts .btn{flex:1;padding:11px 6px;font-size:15px}
+.lgrid{display:grid;grid-template-columns:260px minmax(0,460px);gap:20px;width:100%;max-width:760px;justify-content:center;align-items:start}
+.lgrid .card{max-width:none}
+.pcard{align-items:center;text-align:center}
+.pav{width:104px;height:104px;border-radius:20px;font-size:58px;cursor:pointer;position:relative;box-shadow:0 6px 18px #0006;transition:.2s}
+.pav:hover{transform:scale(1.06) rotate(-3deg)}
+.pav::after{content:"✎";position:absolute;right:-8px;bottom:-8px;background:#454240;border-radius:50%;width:32px;height:32px;font-size:15px;display:grid;place-items:center;box-shadow:0 2px 8px #0009}
+.prate{color:var(--g);font-weight:800;font-size:18px}
+.top .av{display:inline-grid;vertical-align:middle;margin-right:6px;width:30px;height:30px;font-size:17px}
+.cat{color:var(--t);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 -4px}
+.tcg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.tc{background:#3d3a37;border:2px solid transparent;border-radius:10px;padding:14px 4px;cursor:pointer;color:#fff;font-size:16px;transition:.15s}
+.tc:hover{background:#4a4642;transform:translateY(-2px)}
+.tc.on{border-color:var(--g);background:#3f4a33;box-shadow:0 0 14px #81b64c44}
+.or{text-align:center;color:var(--t);font-size:13px}
+.avg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.av.big{width:100%;height:auto;aspect-ratio:1;font-size:34px;border-radius:14px;cursor:pointer;transition:.15s}
+.av.big:hover{transform:scale(1.1)}
+.av.big.on{outline:3px solid var(--g)}
+@media(max-width:700px){.lgrid{grid-template-columns:1fr}}
 /* modal */
 #modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20}
 #modal .card{max-width:340px;text-align:center;align-items:stretch}
@@ -112,30 +131,32 @@ input:focus,select:focus{border-color:var(--g)}
 
 <!-- LOBBY -->
 <div id="lobby" class="screen lob hide">
-  <div class="top"><b><span class="brand"><i class="kn">♞</i> <i class="" style="--i:0">E</i><i class="" style="--i:1">f</i><i class="" style="--i:2">e</i><i class="gr" style="--i:3">c</i><i class="gr" style="--i:4">i</i><i class="gr" style="--i:5">i</i><i class="gr" style="--i:6">i</i><i class="gr" style="--i:7">s</i></span></b><div class="u"><strong id="uname"></strong> · <span id="urate"></span> <button class="btn" id="lo" style="padding:6px 12px;margin-left:10px;font-size:13px">Log out</button></div></div>
-  <div class="card">
-    <h2>Play Chess</h2>
-    <select id="tc">
-      <option value="60,0">Bullet · 1 min</option>
-      <option value="180,2">Blitz · 3 | 2</option>
-      <option value="300,0" selected>Blitz · 5 min</option>
-      <option value="600,0">Rapid · 10 min</option>
-      <option value="900,10">Rapid · 15 | 10</option>
-    </select>
-    <button class="btn big" id="bq">Play Online</button>
-    <button class="btn" id="bc">Create private game</button>
-    <div class="row"><input id="code" placeholder="Room code" maxlength="5" style="text-transform:uppercase"><button class="btn" id="bj">Join</button></div>
-    <div id="lmsg"></div>
-    <button class="btn red hide" id="bx">Cancel</button>
+  <div class="top"><b><span class="brand"><i class="kn">♞</i> <i class="" style="--i:0">E</i><i class="" style="--i:1">f</i><i class="" style="--i:2">e</i><i class="gr" style="--i:3">c</i><i class="gr" style="--i:4">i</i><i class="gr" style="--i:5">i</i><i class="gr" style="--i:6">i</i><i class="gr" style="--i:7">s</i></span></b><div class="u"><span class="av" id="tav"></span> <strong id="uname"></strong> · <span id="urate"></span> <button class="btn" id="lo" style="padding:6px 12px;margin-left:10px;font-size:13px">Log out</button></div></div>
+  <div class="lgrid">
+    <div class="card pcard">
+      <div class="pav av" id="pav" title="Change avatar"></div>
+      <h2 id="pname"></h2><div class="prate" id="prate"></div>
+      <button class="btn" id="pch">Change avatar</button>
+    </div>
+    <div class="card">
+      <h2>Play Chess</h2>
+      <div id="tcs"></div>
+      <button class="btn big" id="bq">Play Online</button>
+      <div class="or">or play a friend</div>
+      <button class="btn" id="bc">Create private game</button>
+      <div class="row"><input id="code" placeholder="Room code" maxlength="5" style="text-transform:uppercase"><button class="btn" id="bj">Join</button></div>
+      <div id="lmsg"></div>
+      <button class="btn red hide" id="bx">Cancel</button>
+    </div>
   </div>
 </div>
 
 <!-- GAME -->
 <div id="game" class="screen hide"><div class="gwrap">
   <div class="bcol">
-    <div class="bar"><div class="who"><div class="av">♟</div><div id="nt"></div></div><div class="clock" id="ct">--:--</div></div>
+    <div class="bar"><div class="who"><div class="av" id="avt"></div><div id="nt"></div></div><div class="clock" id="ct">--:--</div></div>
     <div id="board"></div>
-    <div class="bar"><div class="who"><div class="av" style="background:var(--g)">♙</div><div id="nb"></div></div><div class="clock" id="cb">--:--</div></div>
+    <div class="bar"><div class="who"><div class="av" id="avb"></div><div id="nb"></div></div><div class="clock" id="cb">--:--</div></div>
   </div>
   <div class="side">
     <div class="stat" id="stat"></div>
@@ -168,7 +189,7 @@ function connect() {
 }
 function onMsg(m) {
   switch (m.t) {
-    case 'auth': me = m; localStorage.setItem('ctoken', m.token); $('uname').textContent = m.u; $('urate').textContent = '★ ' + m.rating; if (!G) show('lobby'); break;
+    case 'auth': me = m; localStorage.setItem('ctoken', m.token); profile(); if (!G) show('lobby'); break;
     case 'noauth': localStorage.removeItem('ctoken'); me = null; G = null; show('auth'); break;
     case 'err': if (!me) $('aerr').textContent = m.m; else { toast(m.m); setWait(false); } break;
     case 'info': toast(m.m); break;
@@ -195,8 +216,26 @@ $('go').onclick = () => {
 $('lo').onclick = () => { send({ t: 'logout' }); localStorage.removeItem('ctoken'); me = null; show('auth'); };
 
 /* ---------- lobby UI ---------- */
-$('bq').onclick = () => send({ t: 'queue', tc: $('tc').value.split(',').map(Number) });
-$('bc').onclick = () => send({ t: 'create', tc: $('tc').value.split(',').map(Number) });
+const AVS = ['♞', '🐺', '🦊', '🐼', '🦁', '🐯', '🐸', '🐙', '🦉', '🐲', '👑', '🚀', '🔥', '💎', '🧠', '🎯'];
+function setAv(el, a) { a = a || 0; el.textContent = AVS[a % AVS.length]; el.style.background = `hsl(${a * 23 + 90} 45% 38%)`; }
+function profile() {
+  $('uname').textContent = me.u; $('urate').textContent = '★ ' + me.rating;
+  $('pname').textContent = me.u; $('prate').textContent = '★ ' + me.rating + ' Elo';
+  setAv($('tav'), me.a); setAv($('pav'), me.a);
+}
+function pickAv() {
+  $('mc').innerHTML = '<h2>Choose your avatar</h2><div class="avg">' + AVS.map((x, i) => `<div class="av big ${i === me.a ? 'on' : ''}" data-a="${i}"></div>`).join('') + '</div><button class="btn" id="avx">Close</button>';
+  $('mc').querySelectorAll('.av').forEach(e => { setAv(e, +e.dataset.a); e.onclick = () => { me.a = +e.dataset.a; send({ t: 'avatar', a: me.a }); profile(); $('modal').classList.add('hide'); }; });
+  $('avx').onclick = () => $('modal').classList.add('hide');
+  $('modal').classList.remove('hide');
+}
+$('pav').onclick = $('pch').onclick = pickAv;
+const TCS = [['Bullet', [[60, 0], [120, 1]]], ['Blitz', [[180, 0], [180, 2], [300, 0]]], ['Rapid', [[600, 0], [900, 10], [1800, 0]]]];
+let tcSel = [300, 0];
+$('tcs').innerHTML = TCS.map(([n, l]) => `<div class="cat">${n}</div><div class="tcg">` + l.map(([b, i]) => `<button class="tc ${b === 300 && i === 0 ? 'on' : ''}" data-b="${b}" data-i="${i}">${b / 60}${i ? ' | ' + i : ' min'}</button>`).join('') + '</div>').join('');
+$('tcs').querySelectorAll('.tc').forEach(t => t.onclick = () => { $('tcs').querySelectorAll('.tc').forEach(x => x.classList.remove('on')); t.classList.add('on'); tcSel = [+t.dataset.b, +t.dataset.i]; });
+$('bq').onclick = () => send({ t: 'queue', tc: tcSel });
+$('bc').onclick = () => send({ t: 'create', tc: tcSel });
 $('bj').onclick = () => send({ t: 'join', code: $('code').value });
 $('bx').onclick = () => { send({ t: 'cancel' }); setWait(false); };
 
@@ -218,7 +257,7 @@ function endGame(m) {
   if (!G) return; G.over = true; G.mate = m.reason === 'checkmate';
   const r = m.result, mine = G.color === 'w' ? '1-0' : '0-1';
   const title = r === '1/2-1/2' ? 'Draw' : r === mine ? 'You Won! 🏆' : 'You Lost';
-  const old = me.rating; me.rating = m.ratings[G.color]; $('urate').textContent = '★ ' + me.rating;
+  const old = me.rating; me.rating = m.ratings[G.color]; profile();
   const d = me.rating - old;
   $('mc').innerHTML = `<h2>${title}</h2><div style="color:var(--t)">by ${m.reason}</div><div style="font-size:18px">Rating ${me.rating} <b style="color:${d >= 0 ? 'var(--g)' : '#ff6b6b'}">(${d >= 0 ? '+' : ''}${d})</b></div><button class="btn big" id="mb">Back to lobby</button><button class="btn" id="mv">View board</button>`;
   $('modal').classList.remove('hide');
@@ -229,7 +268,7 @@ function endGame(m) {
 function render() {
   const s = G.st, flip = G.color === 'b', top = flip ? 'w' : 'b', bot = G.color;
   const P = c => G[c], nm = c => `${P(c).u} <small>(${P(c).r})</small>`;
-  $('nt').innerHTML = nm(top); $('nb').innerHTML = nm(bot);
+  $('nt').innerHTML = nm(top); $('nb').innerHTML = nm(bot); setAv($('avt'), P(top).a); setAv($('avb'), P(bot).a);
   const kp = C.inCheck(s) ? C.kingPos(s.b, s.turn) : null;
   const tgt = G.sel ? G.legal.filter(m => m.fr === G.sel[0] && m.fc === G.sel[1]) : [];
   let h = '';
