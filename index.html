@@ -126,11 +126,63 @@ let AC;function snd(t){if(!set.snd)return;try{AC=AC||new AudioContext();const o=
  g.gain.setValueAtTime(.2,n);g.gain.exponentialRampToValueAtTime(.001,n+f[1]);o.connect(g).connect(AC.destination);o.start();o.stop(n+f[1])}catch{}}
 function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t.h);t.h=setTimeout(()=>t.style.display='none',2600)}
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('show',s.id===id))}
-/* ağ */
-let ws;const tx=o=>ws&&ws.readyState===1&&ws.send(JSON.stringify(o));
-function conn(){ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
- ws.onopen=()=>{const t=ls('tok');if(t)tx({a:'resume',tok:t})};ws.onmessage=e=>on(JSON.parse(e.data));ws.onclose=()=>setTimeout(conn,2000)}
-function auth(reg){tx({a:'auth',n:$('un').value,pw:$('pw').value,reg})}
+/* ağ bağlantısı
+   GitHub Pages HTTPS kullandığı için VPS'ye WSS ile bağlanmalısın.
+   VPS IP adresi: 45.131.1.62:3000. Bu ws:// adresi yalnızca oyun HTTP üzerinden açıldığında çalışır. GitHub Pages/HTTPS için alan adı ve WSS/TLS gerekir.
+*/
+const DEFAULT_WS_URL = 'ws://45.131.1.62:3000';
+const WS_URL = (() => {
+  try {
+    const fromQuery = new URLSearchParams(location.search).get('ws');
+    const url = fromQuery || DEFAULT_WS_URL;
+    if (!/^wss?:\/\//i.test(url)) throw new Error('WebSocket adresi ws:// veya wss:// ile başlamalı.');
+    if (location.protocol === 'https:' && url.startsWith('ws://'))
+      throw new Error('HTTPS sayfası ws:// kullanamaz; wss:// ve geçerli TLS sertifikası gerekir.');
+    if (url.includes('YOUR_DOMAIN_HERE'))
+      console.warn('WebSocket adresi ayarlanmadı. DEFAULT_WS_URL değerini kendi alan adınla değiştir.');
+    return url;
+  } catch (e) {
+    console.error('WebSocket ayarı hatalı:', e);
+    return '';
+  }
+})();
+let ws, reconnectTimer = null, manualClose = false;
+const tx = o => {
+  if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify(o)); return true; }
+  toast('Sunucuya bağlı değil. WebSocket adresini ve VPS durumunu kontrol et.');
+  return false;
+};
+function conn(){
+  if (!WS_URL) { toast('WebSocket adresi hatalı. Kod içindeki DEFAULT_WS_URL değerini düzelt.'); return; }
+  if (WS_URL.includes('YOUR_DOMAIN_HERE')) {
+    console.error('WebSocket bağlantısı başlatılmadı: DEFAULT_WS_URL adresini kendi WSS alan adınla değiştir.');
+    $('aerr').textContent = 'Sunucu adresi ayarlanmamış. Kodda DEFAULT_WS_URL değerini kendi WSS alan adınla değiştir.';
+    return;
+  }
+  try { ws = new WebSocket(WS_URL); }
+  catch (e) { console.error('WebSocket oluşturulamadı:', e); scheduleReconnect(); return; }
+  ws.onopen = () => {
+    console.info('WebSocket bağlandı:', WS_URL);
+    $('aerr').textContent = '';
+    const t = ls('tok'); if (t) tx({a:'resume', tok:t});
+  };
+  ws.onmessage = e => {
+    try { on(JSON.parse(e.data)); }
+    catch (err) { console.error('Sunucu mesajı işlenemedi:', err, e.data); }
+  };
+  ws.onerror = e => {
+    console.error('WebSocket bağlantı hatası. WSS alan adı, TLS ve Nginx proxy ayarlarını kontrol et.', e);
+  };
+  ws.onclose = e => {
+    console.warn('WebSocket kapandı:', e.code, e.reason || '(sebep belirtilmedi)');
+    if (!manualClose) scheduleReconnect();
+  };
+}
+function scheduleReconnect(){
+  if (manualClose || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => { reconnectTimer = null; conn(); }, 2500);
+}
+function auth(reg){if(!ws||ws.readyState!==WebSocket.OPEN){$('aerr').textContent='Sunucuya bağlanılamadı. WSS adresini ve VPS bağlantısını kontrol et.';toast('Sunucuya bağlı değil.');return}tx({a:'auth',n:$('un').value,pw:$('pw').value,reg})}
 $('li').onclick=()=>auth(0);$('rg').onclick=()=>auth(1);$('pw').onkeydown=e=>e.key==='Enter'&&auth(0);
 $('out').onclick=()=>{ls('tok','');location.reload()};
 function setMe(){$('me').textContent=me.n+' · '+me.e;$('stat').textContent=`${me.w}G ${me.d}B ${me.l}M`}
