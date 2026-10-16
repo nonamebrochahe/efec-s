@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Efeciiis</title>
+<title>Efeciiis – Play Chess Online</title>
 <style>
 *{box-sizing:border-box;margin:0}
-:root{--bg:#262421;--panel:#312e2b;--panel2:#272522;--g:#81b64c;--g2:#6a9a3a;--l:#ebecd0;--d:#779556;--t:#bababa;--s:min(94vw,calc(100vh - 150px),680px)}
+:root{--bg:#262421;--panel:#312e2b;--panel2:#272522;--g:#81b64c;--g2:#6a9a3a;--l:#ebecd0;--d:#779556;--t:#bababa;--s:min(96vw,calc(100dvh - 140px),680px)}
 body{background:var(--bg);color:#fff;font:15px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;min-height:100vh}
 .hide{display:none!important}
 .screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -49,13 +49,33 @@ input:focus,select:focus{border-color:var(--g)}
 .who small{color:var(--t);font-weight:400}
 .clock{background:#262421;font:700 22px/1 ui-monospace,Consolas,monospace;padding:8px 12px;border-radius:6px;color:#aaa;min-width:88px;text-align:center}
 .clock.act{background:#fff;color:#222}.clock.low{background:#b33;color:#fff}
-#board{display:grid;grid-template-columns:repeat(8,1fr);width:var(--s);height:var(--s);border-radius:5px;overflow:hidden;user-select:none;box-shadow:0 6px 24px #0007}
-.sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+#board{position:relative;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:var(--s);height:var(--s);aspect-ratio:1/1;flex:none;border-radius:6px;overflow:hidden;user-select:none;box-shadow:0 10px 36px #000a,0 0 0 4px #1d1b19}
+.sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0;min-height:0}
 .sq.l{background:var(--l)}.sq.d{background:var(--d)}
-.sq img{position:relative;z-index:2;width:100%;height:100%;cursor:grab;-webkit-user-drag:element}
+.sq img{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain;cursor:grab;-webkit-user-drag:element;filter:drop-shadow(0 3px 2px #0007);transition:transform .15s,filter .15s}
+.sq img:hover{transform:translateY(-4%) scale(1.07);filter:drop-shadow(0 9px 6px #0008)}
 .sq.last::before,.sq.sel::before{content:"";position:absolute;inset:0;background:#f5f55f88;z-index:1}
 .sq.sel::before{background:#ffff0077}
-.chk::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,#f00c 0,#e7000000 70%);z-index:1}
+.sq.chk{background-image:radial-gradient(circle,#ff2d2d66,#ff2d2d00 72%)}
+.chk::after{content:"";position:absolute;inset:4%;border-radius:50%;border:3px solid #ff4d4d;box-shadow:0 0 16px #ff4d4d,inset 0 0 12px #ff4d4d88;animation:ping 1.3s ease-out infinite;z-index:1;pointer-events:none}
+.chk img{animation:shake .45s;filter:drop-shadow(0 0 5px #ff3b3b) drop-shadow(0 0 14px #ff1a1a)}
+.mate img{animation:fall .8s .2s both;filter:grayscale(.7) drop-shadow(0 4px 4px #000a)}
+@keyframes ping{0%{transform:scale(.55);opacity:1}100%{transform:scale(1.4);opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7%)}40%{transform:translateX(7%)}60%{transform:translateX(-4%)}80%{transform:translateX(3%)}}
+@keyframes fall{to{transform:rotate(90deg) translate(-8%,18%)}}
+#board.enter{animation:bin .6s cubic-bezier(.2,1.3,.4,1)}
+#board.enter .sq img{animation:drop .6s cubic-bezier(.3,1.4,.5,1) both;animation-delay:calc(var(--d)*14ms + .25s)}
+@keyframes bin{from{transform:scale(.85) perspective(600px) rotateX(18deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes drop{from{transform:translateY(-130%) scale(1.25);opacity:0;filter:drop-shadow(0 30px 14px #0005)}to{transform:none;opacity:1}}
+.pm{position:absolute;inset:0;background:#000a;z-index:10;animation:fade .2s}
+.pc{position:absolute;width:12.5%;background:#fff;border-radius:8px;box-shadow:0 10px 34px #000c;display:flex;flex-direction:column;animation:pm .22s cubic-bezier(.2,1.5,.4,1);transform-origin:top}
+.pc.up{flex-direction:column-reverse;transform-origin:bottom}
+.pc img{width:100%;display:block;cursor:pointer;border-radius:50%;transition:.15s}
+.pc img:hover{background:#ffd9a0;transform:scale(1.1)}
+.stat.chkt{color:#ff7b7b}
+@keyframes pm{from{transform:scaleY(.3);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}}
+@media(max-width:900px){.side{width:var(--s);height:220px;margin-top:0}.gwrap{gap:12px}}
 .dot{position:absolute;width:30%;height:30%;border-radius:50%;background:#0000002e;z-index:3;pointer-events:none}
 .ring{position:absolute;inset:0;background:radial-gradient(transparent 60%,#0000002e 62%);z-index:3;pointer-events:none}
 .rk,.fl{position:absolute;z-index:1;font:700 clamp(9px,1.7vw,13px) sans-serif;font-style:normal;pointer-events:none}
@@ -184,17 +204,18 @@ $('bx').onclick = () => { send({ t: 'cancel' }); setWait(false); };
 function applyWire(w) {
   const m = C.find(G.st, w); if (!m) return;
   G.san.push(C.san(G.st, m)); G.st = C.apply(G.st, m); G.last = m; G.sel = null; G.legal = C.legal(G.st);
+  if (G.live) { G.anim = [m]; if (m.ca) G.anim.push({ fr: m.fr, fc: m.ca === 'K' ? 7 : 0, tr: m.tr, tc: m.ca === 'K' ? 5 : 3 }); }
 }
 function startGame(m) {
   setWait(false);
   G = { id: m.id, color: m.color, w: m.white, b: m.black, st: C.init(), san: [], last: null, sel: null, over: false };
   G.legal = C.legal(G.st);
-  m.moves.forEach(applyWire);
+  G.live = false; m.moves.forEach(applyWire); G.live = true; G.intro = true;
   G.clock = m.clock; G.t0 = Date.now();
   $('modal').classList.add('hide'); show('game'); render();
 }
 function endGame(m) {
-  if (!G) return; G.over = true;
+  if (!G) return; G.over = true; G.mate = m.reason === 'checkmate';
   const r = m.result, mine = G.color === 'w' ? '1-0' : '0-1';
   const title = r === '1/2-1/2' ? 'Draw' : r === mine ? 'You Won! 🏆' : 'You Lost';
   const old = me.rating; me.rating = m.ratings[G.color]; $('urate').textContent = '★ ' + me.rating;
@@ -217,16 +238,29 @@ function render() {
     let cl = 'sq ' + ((r + c) % 2 ? 'd' : 'l');
     if (G.last && ((G.last.fr === r && G.last.fc === c) || (G.last.tr === r && G.last.tc === c))) cl += ' last';
     if (G.sel && G.sel[0] === r && G.sel[1] === c) cl += ' sel';
-    if (kp && kp[0] === r && kp[1] === c) cl += ' chk';
+    if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate ? ' mate' : '');
     const t = tgt.some(m => m.tr === r && m.tc === c);
     h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
-      (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
+      (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
   }
   $('board').innerHTML = h;
+  $('board').classList.toggle('enter', !!G.intro); G.intro = false;
+  if (G.anim) {
+    for (const m of G.anim) {
+      const im = $('board').querySelector(`.sq[data-r="${m.tr}"][data-c="${m.tc}"] img`); if (!im) continue;
+      const k = flip ? -1 : 1;
+      im.style.transition = 'none'; im.style.zIndex = 9;
+      im.style.transform = `translate(${k * (m.fc - m.tc) * 100}%,${k * (m.fr - m.tr) * 100}%)`;
+      im.getBoundingClientRect();
+      im.style.transition = 'transform .25s cubic-bezier(.3,.8,.3,1)'; im.style.transform = '';
+    }
+    G.anim = null;
+  }
   let mh = '';
   G.san.forEach((x, i) => { if (i % 2 === 0) mh += `<span class="n">${i / 2 + 1}.</span>`; mh += `<span class="${i === G.san.length - 1 ? 'cur' : ''}">${x}</span>`; });
   $('moves').innerHTML = mh; $('moves').scrollTop = 1e6;
-  if (!G.over) $('stat').textContent = s.turn === G.color ? (kp ? 'Your move – check!' : 'Your move') : "Opponent's move";
+  if (!G.over) $('stat').textContent = s.turn === G.color ? (kp ? 'Your move – you are in check!' : 'Your move') : (kp ? "Check! Opponent's move" : "Opponent's move");
+  $('stat').classList.toggle('chkt', !!kp && !G.over);
   clocks();
 }
 const fmt = ms => { ms = Math.max(0, ms); const s = Math.ceil(ms / 1000); return ms < 10000 && ms > 0 ? (ms / 1000).toFixed(1) : String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
@@ -250,9 +284,12 @@ function tryTo(r, c) {
 }
 function doMove(m) { send({ t: 'move', m: C.wire(m) }); G.sel = null; $('modal').classList.add('hide'); render(); }
 function promo(ms) {
-  $('mc').innerHTML = `<h2>Promote to</h2><div class="promo">${'qrbn'.split('').map(q => `<img data-q="${q}" src="${PIECES}${G.color}${q}.png">`).join('')}</div>`;
-  $('modal').classList.remove('hide');
-  $('mc').querySelectorAll('img').forEach(i => i.onclick = () => doMove(ms.find(m => m.pr === i.dataset.q)));
+  const m0 = ms[0], flip = G.color === 'b', j = flip ? 7 - m0.tc : m0.tc, i = flip ? 7 - m0.tr : m0.tr;
+  const o = document.createElement('div'); o.className = 'pm';
+  o.onclick = e => { if (e.target === o) o.remove(); };
+  o.innerHTML = `<div class="pc ${i === 0 ? '' : 'up'}" style="left:${j * 12.5}%;${i === 0 ? 'top:0' : 'bottom:0'}">` + 'qnrb'.split('').map(q => `<img data-q="${q}" src="${PIECES}${G.color}${q}.png">`).join('') + '</div>';
+  o.querySelectorAll('img').forEach(im => im.onclick = () => { o.remove(); doMove(ms.find(m => m.pr === im.dataset.q)); });
+  $('board').appendChild(o);
 }
 $('board').addEventListener('click', e => {
   if (!mayMove()) return;
