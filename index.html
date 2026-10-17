@@ -168,8 +168,7 @@ input:focus,select:focus{border-color:var(--g)}
 #toast.on{transform:translate(-50%,0);opacity:1}
 #conn{position:fixed;top:0;left:0;right:0;background:#c9a227;color:#000;text-align:center;font-weight:700;padding:6px;z-index:40}
 /* ===== 3-PLAYER ===== */
-#tri{--s:min(96vw,calc(100dvh - 120px),680px)}
-.tbars{display:flex;gap:6px;margin-bottom:8px}
+.tbars{display:flex;gap:6px;margin-top:8px}
 .tp3{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:8px;padding:6px 8px;border-bottom:4px solid var(--pc)}
 .tp3.act{background:#3f4a33;box-shadow:0 0 0 2px var(--pc)}
 .tp3.dead{opacity:.35;filter:grayscale(1)}
@@ -178,7 +177,7 @@ input:focus,select:focus{border-color:var(--g)}
 .tp3 .nm small{display:block;color:var(--t);font-weight:400;font-size:11px}
 .tp3 .tk{font:700 15px ui-monospace,Consolas,monospace}
 .tp3 .tk.low{color:#ff6b6b}
-#tboard{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));grid-template-rows:repeat(14,minmax(0,1fr));width:var(--s);height:var(--s);border-radius:8px;overflow:hidden;user-select:none;box-shadow:0 10px 36px #000a}
+#tboard{display:grid;margin:0 auto;border-radius:8px;overflow:hidden;user-select:none;box-shadow:0 10px 36px #000a,0 0 0 4px #1d1b19}
 .tq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0;min-height:0}
 .tq.x{visibility:hidden;cursor:default}
 .tq.l{background:var(--l)}.tq.d{background:var(--d)}
@@ -186,10 +185,15 @@ input:focus,select:focus{border-color:var(--g)}
 .tq.last::before,.tq.sel::before{content:"";position:absolute;inset:0;background:#f5f55f88;z-index:1}
 .tq.sel::before{background:#ffff0077}
 .tq.chk{background-image:radial-gradient(circle,#ff2d2d88,#ff2d2d00 72%)}
-.tp{position:relative;z-index:2;font-size:calc(var(--s)/14*.78);line-height:1;pointer-events:none;text-shadow:0 0 2px #000,0 0 2px #000,0 1px 3px #000a;transition:transform .15s}
-.tq:hover .tp{transform:translateY(-6%) scale(1.08)}
-.tp.c0{color:#e5483f}.tp.c1{color:#3f8be5}.tp.c2{color:#f1c40f}
-#tri .side{margin-top:62px}
+.tq img{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 3px 2px #0007);transition:transform .15s}
+.tq:hover img{transform:translateY(-4%) scale(1.07)}
+.tq img.f0{filter:sepia(1) saturate(6) hue-rotate(-40deg) drop-shadow(0 3px 2px #0007)}
+.tq img.f1{filter:sepia(1) saturate(6) hue-rotate(170deg) drop-shadow(0 3px 2px #0007)}
+.tq img.f2{filter:sepia(1) saturate(5) hue-rotate(10deg) drop-shadow(0 3px 2px #0007)}
+#tboard.enter{animation:bin .6s cubic-bezier(.2,1.3,.4,1)}
+#tboard.enter .tq img{animation:drop .6s cubic-bezier(.3,1.4,.5,1) both;animation-delay:calc(var(--d)*14ms + .25s)}
+.noanim #tboard.enter,.noanim #tboard.enter .tq img{animation:none!important}
+#tri .side{margin-top:0}
 .tlog{padding:3px 8px;font-size:14px}.tlog b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 #tmoves{display:block}
 .tnew{display:inline-block;background:var(--g);color:#000;font-size:10px;font-weight:800;border-radius:6px;padding:1px 5px;vertical-align:middle;margin-left:4px}
@@ -236,7 +240,7 @@ input:focus,select:focus{border-color:var(--g)}
     <div class="slot" id="qslot"><div class="card phys fl2" id="pplay">
       <h2 class="dh">Play Chess</h2>
       <div class="tabs" id="pm"><button data-n="2" class="on">2 Players</button><button data-n="3">3 Players <span class="tnew">NEW</span></button></div>
-      <div class="hint2 hide" id="n3">🔺 3-Player Chess: Red, Blue &amp; Yellow fight on a cross-shaped board. Every player is an enemy – last king standing wins!</div>
+      <div class="hint2 hide" id="n3">🔺 3-Player Chess: Red, Blue &amp; Yellow fight on a T-shaped board. Every player is an enemy – last king standing wins!</div>
       <div id="tcs"></div>
       <button class="btn big" id="bq">♟️ Play Online</button>
       <button class="btn" id="bb">🤖 Play vs Bot</button>
@@ -270,8 +274,8 @@ input:focus,select:focus{border-color:var(--g)}
 <!-- GAME (3 players) -->
 <div id="tri" class="screen hide"><div class="gwrap">
   <div class="bcol">
-    <div class="tbars" id="tbars"></div>
     <div id="tboard"></div>
+    <div class="tbars" id="tbars"></div>
   </div>
   <div class="side">
     <div class="stat" id="tstat"></div>
@@ -346,7 +350,7 @@ function onMsg(m) {
     case 'draw': toast('Opponent offers a draw – press ½ Draw to accept'); break;
     case 'over': endGame(m); break;
     case 'tgame': startTri(m); break;
-    case 'tmove': if (TG) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); } break;
+    case 'tmove': if (TG && m.id === TG.id) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); } break;
     case 'tover': tEnd(m); break;
   }
 }
@@ -798,35 +802,57 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- 3-PLAYER CHESS ---------- */
-const TCOL = ['#e5483f', '#3f8be5', '#f1c40f'], TNAME = ['Red', 'Blue', 'Yellow'];
-const GL = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟\uFE0E' };
+const TCOL = ['#e5483f', '#3f8be5', '#f1c40f'], TNAME = ['Red', 'Blue', 'Yellow'], TTINT = ['#ff5a4f', '#4f9bff', '#ffd23a'];
 const sqn = (r, c) => 'abcdefghijklmn'[c] + (14 - r);
+// the white piece PNGs get tinted per player (multiply colour, keep original alpha)
+const TIMG = [{}, {}, {}];
+function tPrep() {
+  if (tPrep.p) return tPrep.p;
+  return tPrep.p = Promise.all([...'kqrbnp'].map(t => new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      for (let c = 0; c < 3; c++) try {
+        const cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+        const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
+        x.globalCompositeOperation = 'multiply'; x.fillStyle = TTINT[c]; x.fillRect(0, 0, cv.width, cv.height);
+        x.globalCompositeOperation = 'destination-in'; x.drawImage(im, 0, 0);
+        TIMG[c][t] = cv.toDataURL();
+      } catch {}
+      res();
+    };
+    im.onerror = res; im.src = `${PIECES}w${t}.png`;
+  })));
+}
+const tDims = seat => seat === 1 ? [11, 14] : [14, 11];                       // [rows, cols] as this seat sees it
+const tInv = (seat, i, j) => seat === 0 ? [i, j] : seat === 1 ? [j, 10 - i] : [13 - i, 10 - j];
+const tFwd = (seat, r, c) => seat === 0 ? [r, c] : seat === 1 ? [10 - c, r] : [13 - r, 10 - c];
+const tLeave = () => { $('modal').classList.add('hide'); TG = null; show('lobby'); };
 function startTri(m) {
   setWait(false); G = null;
-  TG = { id: m.id, idx: m.idx, pl: m.players, st: T.init(), mv: [], log: [], clock: m.clock, t0: Date.now(), sel: null, last: null, over: false, legal: [] };
+  TG = { id: m.id, idx: m.idx, pl: m.players, st: T.init(), mv: [], log: [], clock: m.clock, t0: Date.now(), sel: null, last: null, over: false, legal: [], anim: null };
   m.moves.forEach(e => tApply(e, false));
-  $('modal').classList.add('hide'); show('tri'); tRender();
+  $('modal').classList.add('hide');
+  tPrep().then(() => { if (!TG || TG.id !== m.id) return; TG.intro = true; show('tri'); tRender(); });
 }
 function tApply(e, live) {
   let st = TG.st;
   if (Array.isArray(e)) {
     const m = T.find(st, e); if (!m) return;
     const pc = st.b[m.fr][m.fc], cap = st.b[m.tr][m.tc], who = +pc[0];
-    TG.log.push({ p: who, txt: `${GL[pc[1]]} ${sqn(m.fr, m.fc)} → ${sqn(m.tr, m.tc)}${cap ? ' ✕' : ''}` });
-    TG.last = m; st = T.apply(st, m);
+    TG.log.push({ p: who, txt: `${sqn(m.fr, m.fc)} → ${sqn(m.tr, m.tc)}${cap ? ' ✕' : ''}` });
+    TG.last = m; if (live) TG.anim = m; st = T.apply(st, m);
   } else { st = T.elim(st, e.e, e.r); TG.last = null; }
   TG.mv.push(e); TG.st = st; TG.sel = null;
-  for (const x of st.ev) { TG.log.push({ p: x.p, txt: `☠ ${TNAME[x.p]} out – ${x.why}` }); if (live) { toast(`${TNAME[x.p]} (${TG.pl[x.p].u}) is out: ${x.why}`); } }
+  for (const x of st.ev) { TG.log.push({ p: x.p, txt: `☠ ${TNAME[x.p]} out – ${x.why}` }); if (live) toast(`${TNAME[x.p]} (${TG.pl[x.p].u}) is out: ${x.why}`); }
   TG.legal = !T.over(st) && st.turn === TG.idx ? T.legal(st) : [];
 }
 function tRender() {
-  const st = TG.st, seat = TG.idx;
-  const inv = (i, j) => seat === 0 ? [i, j] : seat === 1 ? [j, 13 - i] : [13 - i, 13 - j];
+  const st = TG.st, seat = TG.idx, [R, Cn] = tDims(seat), bd = $('tboard');
   const tgt = TG.sel ? TG.legal.filter(m => m.fr === TG.sel[0] && m.fc === TG.sel[1]) : [];
   const chk = new Set(); for (let p = 0; p < 3; p++) if (st.alive[p] && T.inCheck(st, p)) chk.add(T.kingPos(st.b, p).join());
   let h = '';
-  for (let i = 0; i < 14; i++) for (let j = 0; j < 14; j++) {
-    const [r, c] = inv(i, j);
+  for (let i = 0; i < R; i++) for (let j = 0; j < Cn; j++) {
+    const [r, c] = tInv(seat, i, j);
     if (!T.ok(r, c)) { h += '<div class="tq x"></div>'; continue; }
     const p = st.b[r][c]; let cl = 'tq ' + ((r + c) % 2 ? 'd' : 'l');
     if (r >= 12 && c >= 3 && c <= 10) cl += ' z0'; else if (c <= 1 && r >= 3 && r <= 10) cl += ' z1'; else if (r <= 1 && c >= 3 && c <= 10) cl += ' z2';
@@ -834,17 +860,38 @@ function tRender() {
     if (TG.sel && TG.sel[0] === r && TG.sel[1] === c) cl += ' sel';
     if (chk.has(r + ',' + c)) cl += ' chk';
     const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
-    h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (p ? `<span class="tp c${p[0]}">${GL[p[1]]}</span>` : '') + '</div>';
+    const src = p && TIMG[+p[0]][p[1]];
+    h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') +
+      (p ? `<img src="${src || PIECES + 'w' + p[1] + '.png'}" class="${src ? '' : 'f' + p[0]}" draggable="false" style="--d:${i * Cn + j}">` : '') + '</div>';
   }
-  $('tboard').innerHTML = h;
+  bd.style.gridTemplateColumns = `repeat(${Cn},minmax(0,1fr))`; bd.style.gridTemplateRows = `repeat(${R},minmax(0,1fr))`;
+  bd.style.width = `calc(var(--s)*${Cn}/14)`; bd.style.height = `calc(var(--s)*${R}/14)`;
+  bd.innerHTML = h; bd.classList.toggle('enter', !!TG.intro); TG.intro = false;
+  if (TG.anim) {
+    if (S.anim) {
+      const m = TG.anim, [ti, tj] = tFwd(seat, m.tr, m.tc), [fi, fj] = tFwd(seat, m.fr, m.fc);
+      const im = bd.children[ti * Cn + tj] && bd.children[ti * Cn + tj].querySelector('img');
+      if (im) {
+        im.style.transition = 'none'; im.style.zIndex = 9; im.style.transform = `translate(${(fj - tj) * 100}%,${(fi - ti) * 100}%)`;
+        im.getBoundingClientRect();
+        im.style.transition = 'transform .25s cubic-bezier(.3,.8,.3,1)'; im.style.transform = '';
+      }
+    }
+    TG.anim = null;
+  }
   $('tbars').innerHTML = [0, 1, 2].map(p => `<div class="tp3 ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}<small>${TNAME[p]} · ${TG.pl[p].r}</small></div><div class="tk" id="tk${p}">--:--</div></div>`).join('');
   [0, 1, 2].forEach(p => setAv($('tav' + p), TG.pl[p].a, TG.pl[p].pic));
   $('tmoves').innerHTML = TG.log.map(l => `<div class="tlog"><b style="background:${TCOL[l.p]}"></b>${l.txt}</div>`).join(''); $('tmoves').scrollTop = 1e6;
+  const out = !st.alive[TG.idx];
   if (!TG.over) {
-    const own = st.turn === TG.idx, ck = st.alive[st.turn] && T.inCheck(st, st.turn);
-    $('tstat').style.color = ck ? '#ff7b7b' : '';
-    $('tstat').textContent = own ? (ck ? 'Your move – you are in check!' : 'Your move') : `${TG.pl[st.turn].u}'s move (${TNAME[st.turn]})` + (ck ? ' – check!' : '');
+    if (out) { $('tstat').style.color = ''; $('tstat').innerHTML = 'You are out – watching <button class="btn" id="tl3" style="padding:4px 10px;margin-left:6px">Lobby</button>'; $('tl3').onclick = tLeave; }
+    else {
+      const own = st.turn === TG.idx, ck = st.alive[st.turn] && T.inCheck(st, st.turn);
+      $('tstat').style.color = ck ? '#ff7b7b' : '';
+      $('tstat').textContent = own ? (ck ? 'Your move – you are in check!' : 'Your move') : `${TG.pl[st.turn].u}'s move (${TNAME[st.turn]})` + (ck ? ' – check!' : '');
+    }
   }
+  $('tres').textContent = TG.over || out ? '🏠 Lobby' : '⚑ Resign';
   tClocks();
 }
 function tClocks() {
@@ -866,18 +913,25 @@ $('tboard').addEventListener('click', e => {
   }
   TG.sel = (p && +p[0] === TG.idx && !(TG.sel && TG.sel[0] === r && TG.sel[1] === c)) ? [r, c] : null; tRender();
 });
-$('tres').onclick = () => { if (!TG || TG.over || !TG.st.alive[TG.idx] || (S.confirm && !confirm('Resign this game?'))) return; send({ t: 'resign' }); };
+$('tres').onclick = () => {
+  if (!TG) return;
+  if (TG.over || !TG.st.alive[TG.idx]) return tLeave();
+  if (S.confirm && !confirm('Resign this game?')) return;
+  send({ t: 'resign' });
+};
 function tEnd(m) {
-  if (!TG || TG.over) return; TG.over = true; TG.sel = null;
-  const old = me.rating; me.rating = m.ratings[TG.idx]; profile();
-  const pos = m.rank.indexOf(TG.idx), d = m.deltas[TG.idx], med = ['🥇', '🥈', '🥉'];
+  const d = m.deltas[m.idx], pos = m.rank.indexOf(m.idx);
+  if (!TG || TG.id !== m.id) { toast(`3-player game ended: you finished ${pos + 1}${['st', 'nd', 'rd'][pos]} (${d >= 0 ? '+' : ''}${d})`); return; }
+  if (TG.over) return; TG.over = true; TG.sel = null;
+  me.rating = m.ratings[TG.idx]; profile();
+  const med = ['🥇', '🥈', '🥉'];
   $('mc').innerHTML = `<h2>${['You Won! 🏆', '2nd place 🥈', '3rd place 🥉'][pos]}</h2>` +
     m.rank.map((p, i) => `<div class="rank"><b>${med[i]}</b><span style="color:${TCOL[p]}">●</span><span style="flex:1">${TG.pl[p].u}</span><small>${m.deltas[p] >= 0 ? '+' : ''}${m.deltas[p]}</small></div>`).join('') +
     `<div style="font-size:18px">Rating ${me.rating} <b style="color:${d >= 0 ? 'var(--g)' : '#ff6b6b'}">(${d >= 0 ? '+' : ''}${d})</b></div><button class="btn big" id="tb">Back to lobby</button><button class="btn" id="tv">View board</button>`;
   $('modal').classList.remove('hide');
-  $('tb').onclick = () => { $('modal').classList.add('hide'); TG = null; show('lobby'); };
-  $('tv').onclick = () => { $('modal').classList.add('hide'); $('tstat').innerHTML = 'Game over <button class="btn" id="tl2" style="padding:4px 10px;margin-left:6px">Lobby</button>'; $('tl2').onclick = () => { TG = null; show('lobby'); }; };
-  if (!$('tl2')) $('tstat').textContent = 'Game over';
+  $('tb').onclick = tLeave;
+  $('tv').onclick = () => { $('modal').classList.add('hide'); $('tstat').innerHTML = 'Game over <button class="btn" id="tl2" style="padding:4px 10px;margin-left:6px">Lobby</button>'; $('tl2').onclick = tLeave; };
+  tRender(); $('tstat').textContent = 'Game over';
 }
 
 /* ---------- lobby: floating cards you can drag & throw ---------- */
