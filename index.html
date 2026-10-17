@@ -168,8 +168,19 @@ input:focus,select:focus{border-color:var(--g)}
 #toast.on{transform:translate(-50%,0);opacity:1}
 #conn{position:fixed;top:0;left:0;right:0;background:#c9a227;color:#000;text-align:center;font-weight:700;padding:6px;z-index:40}
 /* ===== 3-PLAYER ===== */
-.tbars{display:flex;gap:6px;margin-top:8px}
 .tp3{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:8px;padding:6px 8px;border-bottom:4px solid var(--pc)}
+.tside{display:flex;gap:6px;width:min(340px,100%);margin:0 auto}
+.tside.row{width:100%}
+#ptop{margin-bottom:8px}#pbot{margin-top:8px}
+.tside:empty,.vs:empty{display:none}
+.tmid{display:flex;align-items:center;justify-content:center;gap:10px}
+.vs{display:flex}
+.tp3.v{flex-direction:column;flex:none;width:88px;padding:8px 4px;text-align:center;border-bottom:0;border-top:4px solid var(--pc);gap:4px}
+.tp3.v .nm{width:100%;flex:none}
+#tri .bcol{width:var(--s)}
+#tri.wide{--s:min(calc(100vw - 620px),calc(100dvh - 190px),680px)}
+#tri.wide .bcol{width:auto}
+#tri.wide .side{margin-top:66px}
 .tp3.act{background:#3f4a33;box-shadow:0 0 0 2px var(--pc)}
 .tp3.dead{opacity:.35;filter:grayscale(1)}
 .tp3 .av{width:28px;height:28px;font-size:16px}
@@ -177,16 +188,16 @@ input:focus,select:focus{border-color:var(--g)}
 .tp3 .nm small{display:block;color:var(--t);font-weight:400;font-size:11px}
 .tp3 .tk{font:700 15px ui-monospace,Consolas,monospace}
 .tp3 .tk.low{color:#ff6b6b}
-#tboard{display:grid;margin:0 auto;border-radius:8px;overflow:hidden;user-select:none;box-shadow:0 10px 36px #000a,0 0 0 4px #1d1b19}
+#tboard{display:grid;margin:0 auto;user-select:none;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 10px 18px #000a)}
 .tq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0;min-height:0}
 .tq.x{visibility:hidden;cursor:default}
 .tq.l{background:var(--l)}.tq.d{background:var(--d)}
 .tq.z0{box-shadow:inset 0 0 0 100px #e5483f38}.tq.z1{box-shadow:inset 0 0 0 100px #3f8be538}.tq.z2{box-shadow:inset 0 0 0 100px #f1c40f38}
 .tq.last::before,.tq.sel::before{content:"";position:absolute;inset:0;background:#f5f55f88;z-index:1}
 .tq.sel::before{background:#ffff0077}
-.tq.chk{background-image:radial-gradient(circle,#ff2d2d88,#ff2d2d00 72%)}
 .tq img{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 3px 2px #0007);transition:transform .15s}
 .tq:hover img{transform:translateY(-4%) scale(1.07)}
+.tq.kc img{animation:shake .5s ease-in-out infinite}
 .tq img.f0{filter:sepia(1) saturate(6) hue-rotate(-40deg) drop-shadow(0 3px 2px #0007)}
 .tq img.f1{filter:sepia(1) saturate(6) hue-rotate(170deg) drop-shadow(0 3px 2px #0007)}
 .tq img.f2{filter:sepia(1) saturate(5) hue-rotate(10deg) drop-shadow(0 3px 2px #0007)}
@@ -274,8 +285,9 @@ input:focus,select:focus{border-color:var(--g)}
 <!-- GAME (3 players) -->
 <div id="tri" class="screen hide"><div class="gwrap">
   <div class="bcol">
-    <div id="tboard"></div>
-    <div class="tbars" id="tbars"></div>
+    <div class="tside" id="ptop"></div>
+    <div class="tmid"><div class="vs" id="pleft"></div><div id="tboard"></div><div class="vs" id="pright"></div></div>
+    <div class="tside" id="pbot"></div>
   </div>
   <div class="side">
     <div class="stat" id="tstat"></div>
@@ -826,6 +838,12 @@ function tPrep() {
 const tDims = seat => seat === 1 ? [11, 14] : [14, 11];                       // [rows, cols] as this seat sees it
 const tInv = (seat, i, j) => seat === 0 ? [i, j] : seat === 1 ? [j, 10 - i] : [13 - i, 10 - j];
 const tFwd = (seat, r, c) => seat === 0 ? [r, c] : seat === 1 ? [10 - c, r] : [13 - r, 10 - c];
+const TANC = [[13, 7], [7, 0], [0, 7]];                                          // where each army starts
+function tSide(seat, p) {                                                          // which board edge player p's army is on, as seen by this seat
+  const [i, j] = tFwd(seat, TANC[p][0], TANC[p][1]), [R, Cn] = tDims(seat);
+  return [['bottom', R - 1 - i], ['top', i], ['left', j], ['right', Cn - 1 - j]].sort((a, b) => a[1] - b[1])[0][0];
+}
+addEventListener('resize', () => { if (TG && !$('tri').classList.contains('hide')) tRender(); });
 const tLeave = () => { $('modal').classList.add('hide'); TG = null; show('lobby'); };
 function startTri(m) {
   setWait(false); G = null;
@@ -859,7 +877,7 @@ function tRender() {
     if (r >= 12 && c >= 3 && c <= 10) cl += ' z0'; else if (c <= 1 && r >= 3 && r <= 10) cl += ' z1'; else if (r <= 1 && c >= 3 && c <= 10) cl += ' z2';
     const L = TG.last; if (L && ((L.fr === r && L.fc === c) || (L.tr === r && L.tc === c))) cl += ' last';
     if (TG.sel && TG.sel[0] === r && TG.sel[1] === c) cl += ' sel';
-    if (chk.has(r + ',' + c)) cl += ' chk';
+    if (chk.has(r + ',' + c)) cl += ' kc';
     const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
     const src = p && TIMG[+p[0]][p[1]];
     h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') +
@@ -880,7 +898,13 @@ function tRender() {
     }
     TG.anim = null;
   }
-  $('tbars').innerHTML = [0, 1, 2].map(p => `<div class="tp3 ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}<small>${TNAME[p]} · ${TG.pl[p].r}</small></div><div class="tk" id="tk${p}">--:--</div></div>`).join('');
+  const wide = innerWidth >= 1000; $('tri').classList.toggle('wide', wide);
+  const pill = (p, v) => `<div class="tp3 ${v ? 'v ' : ''}${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}<small>${TNAME[p]} · ${TG.pl[p].r}</small></div><div class="tk" id="tk${p}">--:--</div></div>`;
+  const box = { top: '', bottom: '', left: '', right: '' };
+  if (wide) for (let p = 0; p < 3; p++) { const sd = tSide(seat, p); box[sd] += pill(p, sd === 'left' || sd === 'right'); }
+  else box.bottom = [0, 1, 2].map(p => pill(p, false)).join('');
+  $('ptop').innerHTML = box.top; $('pbot').innerHTML = box.bottom; $('pleft').innerHTML = box.left; $('pright').innerHTML = box.right;
+  $('pbot').classList.toggle('row', !wide);
   [0, 1, 2].forEach(p => setAv($('tav' + p), TG.pl[p].a, TG.pl[p].pic));
   $('tmoves').innerHTML = TG.log.map(l => `<div class="tlog"><b style="background:${TCOL[l.p]}"></b>${l.txt}</div>`).join(''); $('tmoves').scrollTop = 1e6;
   const out = !st.alive[TG.idx];
