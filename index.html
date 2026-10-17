@@ -831,6 +831,7 @@ function startTri(m) {
   setWait(false); G = null;
   TG = { id: m.id, idx: m.idx, pl: m.players, st: T.init(), mv: [], log: [], clock: m.clock, t0: Date.now(), sel: null, last: null, over: false, legal: [], anim: null };
   m.moves.forEach(e => tApply(e, false));
+  TG.legal = !T.over(TG.st) && TG.st.turn === TG.idx ? T.legal(TG.st) : [];   // needed before the first move
   $('modal').classList.add('hide');
   tPrep().then(() => { if (!TG || TG.id !== m.id) return; TG.intro = true; show('tri'); tRender(); });
 }
