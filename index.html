@@ -712,19 +712,28 @@ setInterval(() => { clocks(); tClocks(); }, 100);
 
 /* ---------- input: click + drag ---------- */
 const mayMove = () => G && !G.over && G.st.turn === G.color;
+
+/* PROMOTION: piyon son sıraya gidiyorsa her zaman 4 seçenek (q r b n) sun */
+function promoSet(s, ms) {
+  const m0 = ms[0]; if (!m0) return ms;
+  const p = s.b[m0.fr][m0.fc];
+  if (!p || p[1] !== 'p' || (m0.tr !== 0 && m0.tr !== 7)) return ms;
+  return [...'qrbn'].map(q => ms.find(m => m.pr === q) || { ...m0, pr: q });
+}
 function tryTo(r, c) {
-  const ms = G.legal.filter(m => m.fr === G.sel[0] && m.fc === G.sel[1] && m.tr === r && m.tc === c);
+  let ms = G.legal.filter(m => m.fr === G.sel[0] && m.fc === G.sel[1] && m.tr === r && m.tc === c);
   if (!ms.length) return false;
+  ms = promoSet(G.st, ms);
   if (ms.length > 1) promo(ms); else doMove(ms[0]);
   return true;
 }
 function doMove(m) { if (G.bot) { G.sel = null; $('modal').classList.add('hide'); localMove(m); return; } send({ t: 'move', m: C.wire(m) }); G.sel = null; $('modal').classList.add('hide'); render(); }
-function promo(ms) {
+function promo(ms, cb) {
   const m0 = ms[0], flip = G.color === 'b', j = flip ? 7 - m0.tc : m0.tc, i = flip ? 7 - m0.tr : m0.tr;
   const o = document.createElement('div'); o.className = 'pm';
   o.onclick = e => { if (e.target === o) o.remove(); };
-  o.innerHTML = `<div class="pc ${i === 0 ? '' : 'up'}" style="left:${j * 12.5}%;${i === 0 ? 'top:0' : 'bottom:0'}">` + 'qnrb'.split('').map(q => `<img data-q="${q}" src="${PIECES}${G.color}${q}.png">`).join('') + '</div>';
-  o.querySelectorAll('img').forEach(im => im.onclick = () => { o.remove(); doMove(ms.find(m => m.pr === im.dataset.q)); });
+  o.innerHTML = `<div class="pc ${i === 0 ? '' : 'up'}" style="left:${j * 12.5}%;${i === 0 ? 'top:0' : 'bottom:0'}">` + 'qrbn'.split('').map(q => `<img data-q="${q}" src="${PIECES}${G.color}${q}.png">`).join('') + '</div>';
+  o.querySelectorAll('img').forEach(im => im.onclick = () => { o.remove(); const m = ms.find(x => x.pr === im.dataset.q); if (cb) cb(m); else doMove(m); });
   $('board').appendChild(o);
 }
 $('board').addEventListener('click', e => {
@@ -803,7 +812,7 @@ $('board').addEventListener('click', e => {
 }, true);
 $('board').addEventListener('dragstart', e => e.preventDefault());
 /* ---------- premove ---------- */
-const sameM = (x, q) => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc && (!x.pr || x.pr === 'q');
+const sameM = (x, q) => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc && (x.pr || '') === (q.pr || '');
 // board as it will look after all queued premoves (opponent moves ignored)
 function virt() {
   let v = { ...G.st, turn: G.color, ep: null };
@@ -815,15 +824,20 @@ const preMoves = () => C.legal(virt());
 function preClick(r, c) {
   const v = virt(), p = v.b[r][c];
   if (G.sel) {
-    const ms = C.legal(v).filter(m => m.fr === G.sel[0] && m.fc === G.sel[1] && m.tr === r && m.tc === c);
-    if (ms.length) { const m = ms.find(x => x.pr === 'q') || ms[0]; (G.pres = G.pres || []).push({ fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc }); G.sel = null; render(); return; }
+    let ms = C.legal(v).filter(m => m.fr === G.sel[0] && m.fc === G.sel[1] && m.tr === r && m.tc === c);
+    if (ms.length) {
+      ms = promoSet(v, ms);
+      const push = m => { (G.pres = G.pres || []).push({ fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc, pr: m.pr }); G.sel = null; render(); };
+      if (ms.length > 1) promo(ms, push); else push(ms[0]);
+      return;
+    }
   }
   G.sel = (p && p[0] === G.color && !(G.sel && G.sel[0] === r && G.sel[1] === c)) ? [r, c] : null;
   render();
 }
 function runPre() {
   if (!G || !G.pres || !G.pres.length || G.over || G.st.turn !== G.color) return;
-  const q = G.pres.shift(), m = G.legal.find(x => sameM(x, q));
+  const q = G.pres.shift(), m = G.legal.find(x => sameM(x, q)) || (q.pr ? promoSet(G.st, G.legal.filter(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc)).find(x => x.pr === q.pr) : null);
   if (m) doMove(m); else { G.pres = []; render(); }
 }
 $('board').addEventListener('contextmenu', e => e.preventDefault());
