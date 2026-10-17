@@ -188,9 +188,10 @@ input:focus,select:focus{border-color:var(--g)}
 .tp3 .nm small{display:block;color:var(--t);font-weight:400;font-size:11px}
 .tp3 .tk{font:700 15px ui-monospace,Consolas,monospace}
 .tp3 .tk.low{color:#ff6b6b}
-#tboard{display:grid;margin:0 auto;user-select:none;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 10px 18px #000a)}
+#tboard{position:relative;display:grid;margin:0 auto;user-select:none;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 10px 18px #000a)}
 .tq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0;min-height:0}
 .tq.x{visibility:hidden;cursor:default}
+.tq.thl::after{content:"";position:absolute;inset:0;background:var(--thlc,#81b64c);opacity:.48;z-index:3;pointer-events:none}
 .tq.l{background:var(--l)}.tq.d{background:var(--d)}
 .tq.z0{box-shadow:inset 0 0 0 100px #e5483f38}.tq.z1{box-shadow:inset 0 0 0 100px #3f8be538}.tq.z2{box-shadow:inset 0 0 0 100px #f1c40f38}
 .tq.last::before,.tq.sel::before{content:"";position:absolute;inset:0;background:#f5f55f88;z-index:1}
@@ -221,7 +222,7 @@ input:focus,select:focus{border-color:var(--g)}
 #tboard{position:relative;isolation:isolate;touch-action:none;overflow:visible;flex:none}
 #tboard .tq{touch-action:none}
 #tboard .tq img{pointer-events:none;-webkit-user-drag:none}
-#tboard .tarrow-layer{position:absolute;inset:0;width:100%;height:100%;z-index:8;pointer-events:none;overflow:visible}
+#tboard .tarrow-layer{position:absolute;inset:0;width:100%;height:100%;z-index:8;pointer-events:none;overflow:visible;display:block}
 #tboard .tq.tpre{box-shadow:inset 0 0 0 100px #e0453f88}
 #tri .tp3{min-height:54px;padding:7px 10px;gap:9px;flex-direction:row;text-align:left;border-bottom:0;border-left:4px solid var(--pc);border-radius:8px}
 #tri .tp3.v{width:auto;min-width:0;max-width:260px;flex-direction:row;border-top:0;border-left:4px solid var(--pc);text-align:left;padding:7px 8px}
@@ -397,14 +398,7 @@ function onMsg(m) {
     case 'draw': toast('Opponent offers a draw – press ½ Draw to accept'); break;
     case 'over': endGame(m); break;
     case 'tgame': startTri(m); break;
-    case 'tmove': if (TG && m.id === TG.id) {
-      tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender();
-      if (TG.pre && !TG.over && TG.st.turn === TG.idx) {
-        const q=TG.pre; TG.pre=null;
-        const pm=T.legal(TG.st).find(x=>x.fr===q.fr&&x.fc===q.fc&&x.tr===q.tr&&x.tc===q.tc);
-        if(pm) send({t:'tmove',m:T.wire(pm)}); else toast('Premove no longer legal');
-      }
-    } break;
+    case 'tmove': if (TG && m.id === TG.id) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); tRunPre(); } break;
     case 'tover': tEnd(m); break;
   }
 }
@@ -526,7 +520,7 @@ function render() {
     { const hl = (G.hls || []).find(h => h.r === r && h.c === c); if (hl) cl += ' hl-' + hl.col; }
     if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate && (!G.rv || G.rv.i === G.rv.n) ? ' mate' : '');
     const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
-    h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
+    h += `<div class="${cl}" data-r="${r}" data-c="${c}"${th ? ` style="--thlc:${({g:'#81b64c',r:'#eb4034',y:'#f2c94c',b:'#3a8ee6'})[th.col]||'#81b64c'}"` : ''}>` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
       (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (G.rv && G.rv.cur && G.rv.cur.tr === r && G.rv.cur.tc === c ? `<span class="bdg" style="background:${CL[G.rv.cur.cls].c}">${CL[G.rv.cur.cls].s}</span>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
   }
   $('board').innerHTML = h;
@@ -889,7 +883,7 @@ addEventListener('resize', () => { if (TG && !$('tri').classList.contains('hide'
 const tLeave = () => { $('modal').classList.add('hide'); TG = null; show('lobby'); };
 function startTri(m) {
   setWait(false); G = null;
-  TG = { id: m.id, idx: m.idx, pl: m.players, st: T.init(), mv: [], log: [], clock: m.clock, t0: Date.now(), sel: null, pre: null, arrows: [], last: null, over: false, legal: [], anim: null };
+  TG = { id: m.id, idx: m.idx, pl: m.players, st: T.init(), mv: [], log: [], clock: m.clock, t0: Date.now(), sel: null, pre: null, arrows: [], hls: [], last: null, over: false, legal: [], anim: null };
   m.moves.forEach(e => tApply(e, false));
   TG.legal = !T.over(TG.st) && TG.st.turn === TG.idx ? T.legal(TG.st) : [];   // needed before the first move
   $('modal').classList.add('hide');
@@ -920,10 +914,11 @@ function tRender() {
     const L = TG.last; if (L && ((L.fr === r && L.fc === c) || (L.tr === r && L.tc === c))) cl += ' last';
     if (TG.sel && TG.sel[0] === r && TG.sel[1] === c) cl += ' sel';
     if (TG.pre && ((TG.pre.fr===r&&TG.pre.fc===c)||(TG.pre.tr===r&&TG.pre.tc===c))) cl += ' tpre';
+    const th = (TG.hls || []).find(x => x.r===r && x.c===c); if (th) cl += ' thl';
     if (chk.has(r + ',' + c)) cl += ' kc';
     const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
     const src = p && TIMG[+p[0]][p[1]];
-    h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') +
+    h += `<div class="${cl}" data-r="${r}" data-c="${c}"${th ? ` style="--thlc:${({g:'#81b64c',r:'#eb4034',y:'#f2c94c',b:'#3a8ee6'})[th.col]||'#81b64c'}"` : ''}>` + (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') +
       (p ? `<img src="${src || PIECES + 'w' + p[1] + '.png'}" class="${src ? '' : 'f' + p[0]}" draggable="false" style="--d:${i * Cn + j}">` : '') + '</div>';
   }
   bd.style.gridTemplateColumns = `repeat(${Cn},minmax(0,1fr))`; bd.style.gridTemplateRows = `repeat(${R},minmax(0,1fr))`;
@@ -931,7 +926,7 @@ function tRender() {
   bd.innerHTML = h;
   const arrowLayer = document.createElementNS('http://www.w3.org/2000/svg','svg');
   arrowLayer.setAttribute('class','tarrow-layer'); arrowLayer.setAttribute('viewBox',`0 0 ${Cn*100} ${R*100}`);
-  arrowLayer.setAttribute('aria-hidden','true'); bd.appendChild(arrowLayer);
+  arrowLayer.setAttribute('aria-hidden','true'); arrowLayer.setAttribute('focusable','false'); bd.appendChild(arrowLayer);
   if (TG.arrows) arrowLayer.innerHTML = TG.arrows.map(a => {
     const [fi,fj]=tFwd(seat,a.fr,a.fc), [ti,tj]=tFwd(seat,a.tr,a.tc);
     const x1=fj*100+50,y1=fi*100+50,x2=tj*100+50,y2=ti*100+50;
@@ -981,63 +976,86 @@ function tClocks() {
     e.textContent = TG.st.alive[p] ? fmt(t) : '☠'; e.classList.toggle('low', run && t < 20000);
   }
 }
-/* 3-player board input: click, drag, premove queue, right-click arrows */
-let trcs = null, tDragFrom = null, tSuppressClick = false;
+/* 3-player input: standard click/drag, premoves, right-click arrows/highlights */
+let trcs = null, tDragFrom = null, tSuppressClick = false, tPointerMoved = false;
 function tSquare(e){ const el=e.target.closest('.tq'); return el && el.dataset.r!==undefined ? el : null; }
 function tSendMove(m){ if(!TG || TG.over) return; send({t:'tmove',m:T.wire(m)}); TG.sel=null; TG.pre=null; tRender(); }
-function tAttempt(r,c){
-  if(!TG || TG.over) return;
-  const p=TG.st.b[r][c];
-  if(TG.st.turn===TG.idx && TG.sel){
-    const m=TG.legal.find(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
-    if(m){tSendMove(m);return;}
-  }
-  if(TG.st.turn!==TG.idx){
-    if(TG.sel){
-      if(TG.sel[0]===r&&TG.sel[1]===c){TG.sel=null;TG.pre=null;tRender();return;}
-      TG.pre={fr:TG.sel[0],fc:TG.sel[1],tr:r,tc:c};
-      TG.sel=null; tRender(); toast('Premove queued'); return;
-    }
-    TG.sel=(p && +p[0]===TG.idx)?[r,c]:null; tRender(); return;
-  }
-  TG.sel=(p && +p[0]===TG.idx && !(TG.sel&&TG.sel[0]===r&&TG.sel[1]===c))?[r,c]:null;
-  tRender();
+function tMoveListForUs(){
+  if(!TG) return [];
+  if(TG.st.turn===TG.idx) return TG.legal || T.legal(TG.st);
+  // Generate a local premove candidate list by viewing the position as our turn.
+  try { return T.legal({...TG.st, turn:TG.idx}); } catch { return []; }
 }
-$('tboard').addEventListener('click', e => {
+function tAttempt(r,c){
+  if(!TG || TG.over || !T.ok(r,c)) return;
+  const p=TG.st.b[r][c], ownTurn=TG.st.turn===TG.idx;
+  if(ownTurn){
+    if(TG.sel){
+      const m=(TG.legal||[]).find(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
+      if(m){tSendMove(m);return;}
+      if(TG.sel[0]===r&&TG.sel[1]===c){TG.sel=null;tRender();return;}
+    }
+    TG.pre=null;
+    TG.sel=(p && +p[0]===TG.idx)?[r,c]:null;
+    tRender(); return;
+  }
+  // Premoves are local only until our turn arrives. Keep origin and destination visibly marked.
+  if(TG.sel){
+    if(TG.sel[0]===r&&TG.sel[1]===c){TG.sel=null;TG.pre=null;tRender();return;}
+    const candidates=tMoveListForUs();
+    const candidate=candidates.find(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
+    if(candidate || (TG.st.b[TG.sel[0]] && TG.st.b[TG.sel[0]][TG.sel[1]] && +TG.st.b[TG.sel[0]][TG.sel[1]][0]===TG.idx)){
+      TG.pre={fr:TG.sel[0],fc:TG.sel[1],tr:r,tc:c}; TG.sel=null; tRender(); toast('Premove queued'); return;
+    }
+  }
+  TG.sel=(p && +p[0]===TG.idx)?[r,c]:null; TG.pre=null; tRender();
+}
+function tRunPre(){
+  if(!TG || !TG.pre || TG.over || TG.st.turn!==TG.idx || !TG.st.alive[TG.idx]) return;
+  const q=TG.pre; TG.pre=null;
+  const m=T.legal(TG.st).find(x=>x.fr===q.fr&&x.fc===q.fc&&x.tr===q.tr&&x.tc===q.tc);
+  if(m) tSendMove(m); else { TG.sel=null; tRender(); toast('Premove no longer legal'); }
+}
+$('tboard').addEventListener('click', e=>{
   if(tSuppressClick){tSuppressClick=false;return;}
   const el=tSquare(e); if(!el || !TG || TG.over) return;
+  if(TG.arrows?.length || TG.hls?.length){TG.arrows=[];TG.hls=[];tRender();}
   tAttempt(+el.dataset.r,+el.dataset.c);
 });
 $('tboard').addEventListener('contextmenu',e=>{if(e.target.closest('.tq'))e.preventDefault();});
 $('tboard').addEventListener('mousedown',e=>{
-  if(!TG || TG.over)return;
+  if(!TG || TG.over) return;
   const el=tSquare(e);
   if(e.button===2){e.preventDefault();trcs=el?[+el.dataset.r,+el.dataset.c]:null;return;}
-  if(e.button===0 && el){const r=+el.dataset.r,c=+el.dataset.c,p=TG.st.b[r][c];
-    if(p && +p[0]===TG.idx){tDragFrom=[r,c];}}
+  if(e.button===0 && el){tDragFrom=el.dataset.r!==undefined?[+el.dataset.r,+el.dataset.c]:null;tPointerMoved=false;}
 });
+$('tboard').addEventListener('mousemove',e=>{ if(tDragFrom && (e.buttons&1)) tPointerMoved=true; });
 $('tboard').addEventListener('mouseup',e=>{
-  if(!TG || TG.over)return;
+  if(!TG || TG.over) return;
   const el=tSquare(e);
   if(e.button===2 && trcs){
-    if(!el){trcs=null;return;}
+    e.preventDefault(); if(!el){trcs=null;return;}
     const r=+el.dataset.r,c=+el.dataset.c,col=e.shiftKey?'r':e.ctrlKey?'y':e.altKey?'b':'g';
-    TG.arrows=TG.arrows||[];
-    const idx=TG.arrows.findIndex(a=>a.fr===trcs[0]&&a.fc===trcs[1]&&a.tr===r&&a.tc===c);
-    const old=idx>=0?TG.arrows.splice(idx,1)[0]:null;
-    if(!old || old.col!==col)TG.arrows.push({fr:trcs[0],fc:trcs[1],tr:r,tc:c,col});
+    TG.arrows=TG.arrows||[]; TG.hls=TG.hls||[];
+    if(trcs[0]===r&&trcs[1]===c){
+      const i=TG.hls.findIndex(x=>x.r===r&&x.c===c), old=i>=0?TG.hls.splice(i,1)[0]:null;
+      if(!old||old.col!==col) TG.hls.push({r,c,col});
+    } else {
+      const i=TG.arrows.findIndex(a=>a.fr===trcs[0]&&a.fc===trcs[1]&&a.tr===r&&a.tc===c), old=i>=0?TG.arrows.splice(i,1)[0]:null;
+      if(!old||old.col!==col) TG.arrows.push({fr:trcs[0],fc:trcs[1],tr:r,tc:c,col});
+    }
     trcs=null;tRender();return;
   }
-  if(e.button===0 && tDragFrom && el){
-    const from=tDragFrom;tDragFrom=null;const r=+el.dataset.r,c=+el.dataset.c;
-    if(from[0]!==r||from[1]!==c){tSuppressClick=true;
-      if(TG.st.turn===TG.idx){const m=TG.legal.find(x=>x.fr===from[0]&&x.fc===from[1]&&x.tr===r&&x.tc===c);if(m)tSendMove(m);else {TG.sel=from;tAttempt(r,c);}}
-      else {TG.sel=from;tAttempt(r,c);}
+  if(e.button===0 && tDragFrom){
+    const from=tDragFrom; tDragFrom=null;
+    if(el){const r=+el.dataset.r,c=+el.dataset.c;
+      if(from[0]!==r||from[1]!==c){tSuppressClick=true; tAttemptStart(from); tAttempt(r,c);}
     }
   }
 });
+function tAttemptStart(from){ if(!TG)return; TG.sel=from; }
 $('tboard').addEventListener('dragstart',e=>e.preventDefault());
-$('tboard').addEventListener('pointerup',e=>{ if(e.pointerType==='touch'){const el=tSquare(e);if(el)tAttempt(+el.dataset.r,+el.dataset.c);} });
+$('tboard').addEventListener('touchstart',e=>{const el=tSquare(e);if(el && TG && !TG.over){tAttempt(+el.dataset.r,+el.dataset.c);}},{passive:true});
 $('tres').onclick = () => {
   if (!TG) return;
   if (TG.over || !TG.st.alive[TG.idx]) return tLeave();
