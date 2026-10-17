@@ -247,7 +247,7 @@ input:focus,select:focus{border-color:var(--g)}
  #tri .tp3 .av{width:25px;height:25px;font-size:14px}
 }
 
-/* ===== 3-player UI polish: visible clocks, compact names, clean board, review panel ===== */
+/* ===== 3-player UI polish ===== */
 #tri.wide{--s:min(calc(100vw - 650px),calc(100dvh - 170px),720px)}
 #tri .gwrap{gap:14px;align-items:center}
 #tri.wide .side{width:285px;min-width:250px;height:var(--s);margin-top:0;box-shadow:none;border:0}
@@ -289,8 +289,7 @@ input:focus,select:focus{border-color:var(--g)}
  #tri #tacts{padding:7px}
 }
 
-
-/* Final 3-player fixes: compact names/rating, oriented player cards, stable pointer input */
+/* Final 3-player fixes */
 #tri .tp3{min-width:0;overflow:hidden;}
 #tri .tp3 .nm{min-width:0;max-width:112px;flex:1 1 80px;overflow:hidden;}
 #tri .tp3 .uname{display:block;max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:1.1;}
@@ -299,20 +298,31 @@ input:focus,select:focus{border-color:var(--g)}
 #tboard{touch-action:none;-webkit-user-select:none;user-select:none;}
 #tboard .tq{touch-action:none;-webkit-user-select:none;user-select:none;}
 #tri #tmoves{min-height:100px;}
-#tri .review-controls{display:flex;gap:6px;padding:8px;}
-#tri .review-controls .btn{flex:1;padding:8px 5px;font-size:13px;}
 #tri .tp3.orient-top{transform:rotate(180deg)}
 #tri .tp3.orient-left{transform:rotate(90deg)}
 #tri .tp3.orient-right{transform:rotate(-90deg)}
 @media(max-width:1200px) and (min-width:1000px){#tri .tp3 .nm,#tri .tp3 .uname,#tri .tp3 .nm small{max-width:82px}#tri .tp3 .tk{min-width:48px;font-size:12px}}
 @media(max-width:999px){#tri .tp3 .nm,#tri .tp3 .uname,#tri .tp3 .nm small{max-width:125px}#tri .tp3 .tk{min-width:52px;font-size:12px}}
 
-/* Material advantage indicators (Chess.com-style +N) */
+/* Material advantage indicators */
 .matadv{display:inline-flex;align-items:center;justify-content:center;min-width:27px;padding:1px 5px;border-radius:5px;background:#252321;color:#a8d56d;font-size:12px;font-weight:800;line-height:1.5;margin-left:5px;white-space:nowrap}
 .matadv:empty{display:none}
 .tadv{display:inline-flex;align-items:center;justify-content:center;min-width:25px;margin-left:5px;padding:1px 4px;border-radius:4px;background:#252321;color:#a8d56d;font-size:11px;font-weight:800;line-height:1.4;white-space:nowrap}
 .tadv:empty{display:none}
 @media(max-width:600px){.matadv{font-size:11px;min-width:23px;padding:1px 4px}}
+
+/* ===== 3P: ALL player cards SAME SIZE (fixed width, short names) ===== */
+#tri .tp3,#tri .tp3.v{width:200px;min-width:200px;max-width:200px;flex:none;height:50px;min-height:50px;overflow:hidden}
+#tri .tside{justify-content:center}
+#tri .tp3 .nm{width:84px;min-width:84px;max-width:84px;flex:none}
+#tri .tp3 .uname,#tri .tp3 .nm small{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tri .tp3 .tk{width:58px;min-width:58px;padding:6px 0;text-align:center}
+#tri .vs{width:200px;max-width:200px}
+@media(max-width:999px){
+  #tri .tp3,#tri .tp3.v{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .nm{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .uname,#tri .tp3 .nm small{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -395,7 +405,7 @@ input:focus,select:focus{border-color:var(--g)}
   <div class="side">
     <div class="stat" id="tstat"></div>
     <div id="tmoves"></div>
-    <div class="acts" id="tacts"><button class="btn" id="treview">📊 Review</button><button class="btn red" id="tres">⚑ Resign</button></div>
+    <div class="acts" id="tacts"><button class="btn red" id="tres">⚑ Resign</button></div>
   </div>
 </div></div>
 
@@ -465,7 +475,7 @@ function onMsg(m) {
     case 'draw': toast('Opponent offers a draw – press ½ Draw to accept'); break;
     case 'over': endGame(m); break;
     case 'tgame': startTri(m); break;
-    case 'tmove': if (TG && m.id === TG.id) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); tRunPre(); } break;
+    case 'tmove': if (TG && m.id === TG.id) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); } break;
     case 'tover': tEnd(m); break;
   }
 }
@@ -588,7 +598,7 @@ function render() {
     { const hl = (G.hls || []).find(h => h.r === r && h.c === c); if (hl) cl += ' hl-' + hl.col; }
     if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate && (!G.rv || G.rv.i === G.rv.n) ? ' mate' : '');
     const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
-    h += `<div class="${cl}" data-r="${r}" data-c="${c}"${th ? ` style="--thlc:${({g:'#81b64c',r:'#eb4034',y:'#f2c94c',b:'#3a8ee6'})[th.col]||'#81b64c'}"` : ''}>` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
+    h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
       (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (G.rv && G.rv.cur && G.rv.cur.tr === r && G.rv.cur.tc === c ? `<span class="bdg" style="background:${CL[G.rv.cur.cls].c}">${CL[G.rv.cur.cls].s}</span>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
   }
   $('board').innerHTML = h;
@@ -832,7 +842,7 @@ function drawArrows(flip) {
   }).join('');
 }
 
-/* ---------- GAME REVIEW ---------- */
+/* ---------- GAME REVIEW (2 players only) ---------- */
 const CL = {
   brilliant: { s: '!!', c: '#1baca6', t: 'a brilliant move' }, great: { s: '!', c: '#5c8bb0', t: 'a great move' },
   best: { s: '★', c: '#81b64c', t: 'the best move' }, excellent: { s: '👍', c: '#96bc4b', t: 'an excellent move' },
@@ -998,9 +1008,15 @@ function tApply(e, live) {
   TG.mv.push(e); TG.st = st; TG.sel = null;
   for (const x of st.ev) { TG.log.push({ p: x.p, txt: `☠ ${TNAME[x.p]} out – ${x.why}` }); if (live) toast(`${TNAME[x.p]} (${TG.pl[x.p].u}) is out: ${x.why}`); }
   TG.legal = !T.over(st) && st.turn === TG.idx ? T.legal(st) : [];
+  // run a queued premove if it is our turn now
+  if (live && TG.pre && st.turn === TG.idx && !T.over(st)) {
+    const q = TG.pre; TG.pre = null;
+    const pm = TG.legal.find(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc);
+    if (pm) setTimeout(() => { if (TG && !TG.over && TG.st.turn === TG.idx) tSendMove(pm); }, 0);
+  }
 }
 function tRender() {
-  const st = TG.rvState || TG.st, seat = TG.idx, [R, Cn] = tDims(seat), bd = $('tboard');
+  const st = TG.st, seat = TG.idx, [R, Cn] = tDims(seat), bd = $('tboard');
   const tgt = TG.sel ? TG.legal.filter(m => m.fr === TG.sel[0] && m.fc === TG.sel[1]) : [];
   const chk = new Set(); for (let p = 0; p < 3; p++) if (st.alive[p] && T.inCheck(st, p)) chk.add(T.kingPos(st.b, p).join());
   let h = '';
@@ -1047,10 +1063,14 @@ function tRender() {
   }
   const wide = innerWidth >= 1000; $('tri').classList.toggle('wide', wide);
   const pill = (p, v, sd='bottom') => {
-    const uname = String(TG.pl[p].u || 'Player'), safeName = uname.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const uname = String(TG.pl[p].u || 'Player');
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const safeName = esc(uname);
+    // SAME LENGTH for every player: max 9 chars, longer names get cut with …
+    const shortName = esc(uname.length > 9 ? uname.slice(0, 8) + '…' : uname);
     const rating = Number(TG.pl[p].r); const shortRating = Number.isFinite(rating) ? (rating >= 1000 ? (rating/1000).toFixed(rating>=10000?0:1).replace(/\.0$/,'')+'k' : String(rating)) : String(TG.pl[p].r || '');
     const orient = sd === 'top' ? 'orient-top' : sd === 'left' ? 'orient-left' : sd === 'right' ? 'orient-right' : '';
-    return `<div class="tp3 ${v ? 'v ' : ''}${orient} ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}" title="${safeName} · ${TG.pl[p].r} rating"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${safeName}">${safeName}${p === TG.idx ? ' (you)' : ''}</span><small>${TNAME[p]} · ${shortRating}</small></div><span class="tadv" id="ta${p}"></span><div class="tk" id="tk${p}">--:--</div></div>`;
+    return `<div class="tp3 ${v ? 'v ' : ''}${orient} ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}" title="${safeName} · ${TG.pl[p].r} rating"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${safeName}">${shortName}</span><small>${TNAME[p]} · ${shortRating}${p === TG.idx ? ' · sen' : ''}</small></div><span class="tadv" id="ta${p}"></span><div class="tk" id="tk${p}">--:--</div></div>`;
   };
   const box = { top: '', bottom: '', left: '', right: '' };
   if (wide) for (let p = 0; p < 3; p++) { const sd = tSide(seat, p); box[sd] += pill(p, sd === 'left' || sd === 'right', sd); }
@@ -1076,12 +1096,12 @@ function tClocks() {
   if (!TG) return;
   for (let p = 0; p < 3; p++) {
     const e = $('tk' + p); if (!e) continue;
-    const run = !TG.over && !TG.rvState && TG.st.alive[p] && TG.st.turn === p, t = TG.clock[p] - (run ? Date.now() - TG.t0 : 0);
+    const run = !TG.over && TG.st.alive[p] && TG.st.turn === p, t = TG.clock[p] - (run ? Date.now() - TG.t0 : 0);
     e.textContent = TG.st.alive[p] ? fmt(t) : '☠'; e.classList.toggle('low', run && t < 20000);
   }
 }
 /* 3-player input: pointer-based drag/drop, click-to-move, premoves and right-click arrows */
-let trcs = null, tDragFrom = null, tSuppressClick = false, tPointerMoved = false, tPointerId = null;
+let trcs = null, tDragFrom = null, tSuppressClick = false, tPointerId = null;
 function tSquare(e){
   let el = e && e.target && e.target.closest ? e.target.closest('.tq') : null;
   if (el && el.dataset.r !== undefined) return el;
@@ -1092,14 +1112,14 @@ function tSquare(e){
   }
   return null;
 }
-function tSendMove(m){ if(!TG || TG.over || TG.rvState) return; send({t:'tmove',m:T.wire(m)}); TG.sel=null; TG.pre=null; tRender(); }
+function tSendMove(m){ if(!TG || TG.over) return; send({t:'tmove',m:T.wire(m)}); TG.sel=null; TG.pre=null; tRender(); }
 function tMoveListForUs(){
   if(!TG) return [];
   if(TG.st.turn===TG.idx) return TG.legal || T.legal(TG.st);
   try { return T.legal({...TG.st, turn:TG.idx}); } catch { return []; }
 }
 function tAttempt(r,c){
-  if(!TG || TG.over || TG.rvState || !T.ok(r,c)) return;
+  if(!TG || TG.over || !T.ok(r,c)) return;
   const p=TG.st.b[r][c], ownTurn=TG.st.turn===TG.idx;
   if(ownTurn){
     if(TG.sel){
@@ -1113,7 +1133,7 @@ function tAttempt(r,c){
     if(TG.sel[0]===r&&TG.sel[1]===c){TG.sel=null;TG.pre=null;tRender();return;}
     const candidates=tMoveListForUs();
     const candidate=candidates.find(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
-    if(candidate || (TG.st.b[TG.sel[0]] && TG.st.b[TG.sel[0]][TG.sel[1]] && +TG.st.b[TG.sel[0]][TG.sel[1]][0]===TG.idx)){
+    if(candidate){
       TG.pre={fr:TG.sel[0],fc:TG.sel[1],tr:r,tc:c}; TG.sel=null; tRender(); toast('Premove queued'); return;
     }
   }
@@ -1121,19 +1141,20 @@ function tAttempt(r,c){
 }
 $('tboard').addEventListener('click', e=>{
   if(tSuppressClick){tSuppressClick=false;return;}
-  const el=tSquare(e); if(!el || !TG || TG.over || TG.rvState) return;
-  if(TG.arrows?.length || TG.hls?.length){TG.arrows=[];TG.hls=[];tRender();}
+  const el=tSquare(e); if(!el || !TG || TG.over) return;
+  if((TG.arrows&&TG.arrows.length) || (TG.hls&&TG.hls.length)){TG.arrows=[];TG.hls=[];tRender();}
   tAttempt(+el.dataset.r,+el.dataset.c);
 });
 $('tboard').addEventListener('contextmenu',e=>{if(e.target.closest('.tq'))e.preventDefault();});
 $('tboard').addEventListener('pointerdown',e=>{
-  if(!TG || TG.over || TG.rvState) return;
+  if(!TG || TG.over) return;
   const el=tSquare(e);
   if(e.button===2){e.preventDefault();trcs=el?[+el.dataset.r,+el.dataset.c]:null;return;}
-  if(e.button===0 && el){tDragFrom=[+el.dataset.r,+el.dataset.c];tPointerMoved=false;tPointerId=e.pointerId;try{$('tboard').setPointerCapture(e.pointerId);}catch{} }
-});
-$('tboard').addEventListener('pointermove',e=>{
-  if(tDragFrom && (e.pointerId===tPointerId) && (Math.abs(e.movementX)>1 || Math.abs(e.movementY)>1)) tPointerMoved=true;
+  if(e.button===0 && el){
+    const r=+el.dataset.r,c=+el.dataset.c,p=TG.st.b[r][c];
+    // drag only starts from one of our own pieces
+    if(p && +p[0]===TG.idx){tDragFrom=[r,c];tPointerId=e.pointerId;try{$('tboard').setPointerCapture(e.pointerId);}catch{} }
+  }
 });
 $('tboard').addEventListener('pointerup',e=>{
   const el=tSquare(e);
@@ -1153,31 +1174,8 @@ $('tboard').addEventListener('pointerup',e=>{
     }
   }
 });
-$('tboard').addEventListener('pointercancel',()=>{tDragFrom=null;tPointerId=null;tPointerMoved=false;});
+$('tboard').addEventListener('pointercancel',()=>{tDragFrom=null;tPointerId=null;});
 $('tboard').addEventListener('dragstart',e=>e.preventDefault());
-$('tboard').addEventListener('touchstart',e=>{const el=tSquare(e);if(el && TG && !TG.over && !TG.rvState){tAttempt(+el.dataset.r,+el.dataset.c);}},{passive:true});
-function tReviewState(index){
-  if(!TG) return;
-  let st=T.init();
-  const upto=Math.max(0,Math.min(index,TG.mv.length));
-  for(let i=0;i<upto;i++){
-    const e=TG.mv[i];
-    if(Array.isArray(e)){const m=T.find(st,e);if(m)st=T.apply(st,m);}
-    else if(e && e.e!==undefined) st=T.elim(st,e.e,e.r);
-  }
-  TG.rvState=st; TG.rvIndex=upto; tRender();
-  $('tstat').textContent=`Review · ${upto}/${TG.mv.length} moves`;
-  const old=$('treview'); if(old) old.textContent='↩ Return live';
-  let nav=$('treviewnav');
-  if(!nav){nav=document.createElement('div');nav.id='treviewnav';nav.className='review-controls';$('tacts').before(nav);}
-  nav.innerHTML='<button class="btn" id="trfirst">⏮</button><button class="btn" id="trprev">◀</button><button class="btn" id="trnext">▶</button><button class="btn" id="trlast">⏭</button>';
-  $('trfirst').onclick=()=>tReviewState(0); $('trprev').onclick=()=>tReviewState((TG.rvIndex||0)-1); $('trnext').onclick=()=>tReviewState((TG.rvIndex||0)+1); $('trlast').onclick=()=>tReviewState(TG.mv.length);
-}
-$('treview').onclick = () => {
-  if (!TG) return;
-  if(TG.rvState){TG.rvState=null;TG.rvIndex=null;const nav=$('treviewnav');if(nav)nav.remove();$('treview').textContent='📊 Review';tRender();$('tstat').textContent=TG.over?'Game over':(TG.st.turn===TG.idx?'Your move':`${String(TG.pl[TG.st.turn].u).slice(0,16)}'s move`);return;}
-  tReviewState(TG.mv.length);
-};
 $('tres').onclick = () => {
   if (!TG) return;
   if (TG.over || !TG.st.alive[TG.idx]) return tLeave();
@@ -1187,15 +1185,14 @@ $('tres').onclick = () => {
 function tEnd(m) {
   const d = m.deltas[m.idx], pos = m.rank.indexOf(m.idx);
   if (!TG || TG.id !== m.id) { toast(`3-player game ended: you finished ${pos + 1}${['st', 'nd', 'rd'][pos]} (${d >= 0 ? '+' : ''}${d})`); return; }
-  if (TG.over) return; TG.over = true; TG.sel = null;
+  if (TG.over) return; TG.over = true; TG.sel = null; TG.pre = null;
   me.rating = m.ratings[TG.idx]; profile();
   const med = ['🥇', '🥈', '🥉'];
   $('mc').innerHTML = `<h2>${['You Won! 🏆', '2nd place 🥈', '3rd place 🥉'][pos]}</h2>` +
     m.rank.map((p, i) => `<div class="rank"><b>${med[i]}</b><span style="color:${TCOL[p]}">●</span><span style="flex:1">${TG.pl[p].u}</span><small>${m.deltas[p] >= 0 ? '+' : ''}${m.deltas[p]}</small></div>`).join('') +
-    `<div style="font-size:18px">Rating ${me.rating} <b style="color:${d >= 0 ? 'var(--g)' : '#ff6b6b'}">(${d >= 0 ? '+' : ''}${d})</b></div><button class="btn big" id="tb">Back to lobby</button><button class="btn" id="trv">📊 Game Review</button><button class="btn" id="tv">View board</button>`;
+    `<div style="font-size:18px">Rating ${me.rating} <b style="color:${d >= 0 ? 'var(--g)' : '#ff6b6b'}">(${d >= 0 ? '+' : ''}${d})</b></div><button class="btn big" id="tb">Back to lobby</button><button class="btn" id="tv">View board</button>`;
   $('modal').classList.remove('hide');
   $('tb').onclick = tLeave;
-  $('trv').onclick = () => { $('modal').classList.add('hide'); tReviewState(TG.mv.length); };
   $('tv').onclick = () => { $('modal').classList.add('hide'); $('tstat').innerHTML = 'Game over <button class="btn" id="tl2" style="padding:4px 10px;margin-left:6px">Lobby</button>'; $('tl2').onclick = tLeave; };
   tRender(); $('tstat').textContent = 'Game over';
 }
