@@ -81,18 +81,25 @@ input:focus,select:focus{border-color:var(--g)}
 .rk,.fl{position:absolute;z-index:1;font:700 clamp(9px,1.7vw,13px) sans-serif;font-style:normal;pointer-events:none}
 .rk{top:2px;left:3px}.fl{bottom:1px;right:4px}
 .l .rk,.l .fl{color:var(--d)}.d .rk,.d .fl{color:var(--l)}
+.nocoord .rk,.nocoord .fl{display:none}
+.noanim #board.enter,.noanim #board.enter .sq img{animation:none!important}
 .side{width:320px;max-width:94vw;background:var(--panel);border-radius:10px;display:flex;flex-direction:column;height:var(--s);margin-top:44px;overflow:hidden}
 .stat{padding:14px 16px;font-weight:700;font-size:17px;background:var(--panel2);text-align:center}
-#moves{flex:1;overflow:auto;padding:8px 6px;display:grid;grid-template-columns:36px 1fr 1fr;align-content:start;font-size:15px}
+#moves,#tmoves{flex:1;overflow:auto;padding:8px 6px;display:grid;grid-template-columns:36px 1fr 1fr;align-content:start;font-size:15px}
 #moves span{padding:4px 8px;border-radius:4px}#moves .n{color:var(--t)}#moves .cur{background:#454240;font-weight:700}
 .acts{display:flex;gap:8px;padding:10px}.acts .btn{flex:1;padding:11px 6px;font-size:15px}
-.lgrid{display:grid;grid-template-columns:260px minmax(0,460px);gap:20px;width:100%;max-width:760px;justify-content:center;align-items:start}
+.lgrid{display:grid;grid-template-columns:300px minmax(0,460px);gap:20px;width:100%;max-width:800px;justify-content:center;align-items:start}
 .lgrid .card{max-width:none}
+.lcol{display:flex;flex-direction:column;gap:20px}
 .pcard{align-items:center;text-align:center}
 .pav{width:104px;height:104px;border-radius:20px;font-size:58px;cursor:pointer;position:relative;box-shadow:0 6px 18px #0006;transition:.2s}
 .pav:hover{transform:scale(1.06) rotate(-3deg)}
 .pav::after{content:"✎";position:absolute;right:-8px;bottom:-8px;background:#454240;border-radius:50%;width:32px;height:32px;font-size:15px;display:grid;place-items:center;box-shadow:0 2px 8px #0009}
 .prate{color:var(--g);font-weight:800;font-size:18px}
+.pst{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+.pst div{background:#272522;border-radius:8px;padding:6px 2px}.pst b{display:block;font-size:17px}.pst small{color:var(--t);font-size:11px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:3px 0}
+.sw input{width:20px;height:20px;accent-color:var(--g);flex:none}
 .top .av{display:inline-grid;vertical-align:middle;margin-right:6px;width:30px;height:30px;font-size:17px}
 .cat{color:var(--t);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 -4px}
 .tcg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
@@ -104,7 +111,7 @@ input:focus,select:focus{border-color:var(--g)}
 .av.big{width:100%;height:auto;aspect-ratio:1;font-size:34px;border-radius:14px;cursor:pointer;transition:.15s}
 .av.big:hover{transform:scale(1.1)}
 .av.big.on{outline:3px solid var(--g)}
-@media(max-width:700px){.lgrid{grid-template-columns:1fr}}
+@media(max-width:760px){.lgrid{grid-template-columns:1fr}}
 /* modal */
 #modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20}
 #modal .card{max-width:340px;text-align:center;align-items:stretch}
@@ -155,6 +162,34 @@ input:focus,select:focus{border-color:var(--g)}
 #toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,80px);background:#111;color:#fff;padding:12px 20px;border-radius:8px;transition:.3s;z-index:30;opacity:0}
 #toast.on{transform:translate(-50%,0);opacity:1}
 #conn{position:fixed;top:0;left:0;right:0;background:#c9a227;color:#000;text-align:center;font-weight:700;padding:6px;z-index:40}
+/* ===== 3-PLAYER ===== */
+#tri{--s:min(96vw,calc(100dvh - 120px),680px)}
+.tbars{display:flex;gap:6px;margin-bottom:8px}
+.tp3{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:8px;padding:6px 8px;border-bottom:4px solid var(--pc)}
+.tp3.act{background:#3f4a33;box-shadow:0 0 0 2px var(--pc)}
+.tp3.dead{opacity:.35;filter:grayscale(1)}
+.tp3 .av{width:28px;height:28px;font-size:16px}
+.tp3 .nm{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:13px}
+.tp3 .nm small{display:block;color:var(--t);font-weight:400;font-size:11px}
+.tp3 .tk{font:700 15px ui-monospace,Consolas,monospace}
+.tp3 .tk.low{color:#ff6b6b}
+#tboard{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));grid-template-rows:repeat(14,minmax(0,1fr));width:var(--s);height:var(--s);border-radius:8px;overflow:hidden;user-select:none;box-shadow:0 10px 36px #000a}
+.tq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0;min-height:0}
+.tq.x{visibility:hidden;cursor:default}
+.tq.l{background:var(--l)}.tq.d{background:var(--d)}
+.tq.z0{box-shadow:inset 0 0 0 100px #e5483f38}.tq.z1{box-shadow:inset 0 0 0 100px #3f8be538}.tq.z2{box-shadow:inset 0 0 0 100px #f1c40f38}
+.tq.last::before,.tq.sel::before{content:"";position:absolute;inset:0;background:#f5f55f88;z-index:1}
+.tq.sel::before{background:#ffff0077}
+.tq.chk{background-image:radial-gradient(circle,#ff2d2d88,#ff2d2d00 72%)}
+.tp{position:relative;z-index:2;font-size:calc(var(--s)/14*.78);line-height:1;pointer-events:none;text-shadow:0 0 2px #000,0 0 2px #000,0 1px 3px #000a;transition:transform .15s}
+.tq:hover .tp{transform:translateY(-6%) scale(1.08)}
+.tp.c0{color:#e5483f}.tp.c1{color:#3f8be5}.tp.c2{color:#f1c40f}
+#tri .side{margin-top:62px}
+.tlog{padding:3px 8px;font-size:14px}.tlog b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+#tmoves{display:block}
+.tnew{display:inline-block;background:var(--g);color:#000;font-size:10px;font-weight:800;border-radius:6px;padding:1px 5px;vertical-align:middle;margin-left:4px}
+.rank{display:flex;align-items:center;gap:10px;background:#272522;border-radius:8px;padding:8px 12px;text-align:left}
+.rank b{font-size:22px}
 </style>
 </head>
 <body>
@@ -175,18 +210,31 @@ input:focus,select:focus{border-color:var(--g)}
 <div id="lobby" class="screen lob hide">
   <div class="top"><b><span class="brand"><i class="kn">♞</i> <i class="" style="--i:0">E</i><i class="" style="--i:1">f</i><i class="" style="--i:2">e</i><i class="gr" style="--i:3">c</i><i class="gr" style="--i:4">i</i><i class="gr" style="--i:5">i</i><i class="gr" style="--i:6">i</i><i class="gr" style="--i:7">s</i></span></b><div class="u"><span class="av" id="tav"></span> <strong id="uname"></strong> · <span id="urate"></span> <button class="btn" id="lo" style="padding:6px 12px;margin-left:10px;font-size:13px">Log out</button></div></div>
   <div class="lgrid">
-    <div class="slot" id="pslot"><div class="card pcard phys fl1" id="pcard">
-      <div class="pav av" id="pav" title="Change avatar"></div>
-      <h2 id="pname"></h2><div class="prate" id="prate"></div>
-      <button class="btn" id="pch">✎ Edit profile</button>
-    <button class="mini hide" id="preset" title="Reset position">↺</button>
-    </div></div>
+    <div class="lcol">
+      <div class="slot" id="pslot"><div class="card pcard phys fl1" id="pcard">
+        <div class="pav av" id="pav" title="Change avatar"></div>
+        <h2 id="pname"></h2><div class="prate" id="prate"></div>
+        <div class="pst" id="pst"></div>
+        <button class="btn" id="pch">✎ Edit profile</button>
+        <button class="mini hide" id="preset" title="Reset position">↺</button>
+      </div></div>
+      <div class="card" id="setc">
+        <h2>⚙ Settings</h2>
+        <div class="cat">Board theme</div>
+        <select id="theme"></select>
+        <div class="cat">Game</div>
+        <div id="sets"></div>
+        <button class="btn" id="pwb">🔑 Change password</button>
+      </div>
+    </div>
     <div class="slot" id="qslot"><div class="card phys fl2" id="pplay">
       <h2 class="dh">Play Chess</h2>
+      <div class="tabs" id="pm"><button data-n="2" class="on">2 Players</button><button data-n="3">3 Players <span class="tnew">NEW</span></button></div>
+      <div class="hint2 hide" id="n3">🔺 3-Player Chess: Red, Blue &amp; Yellow fight on a cross-shaped board. Every player is an enemy – last king standing wins!</div>
       <div id="tcs"></div>
       <button class="btn big" id="bq">♟️ Play Online</button>
       <button class="btn" id="bb">🤖 Play vs Bot</button>
-      <div class="or">or play a friend</div>
+      <div class="or">or play friends</div>
       <button class="btn" id="bc">🔗 Create private game</button>
       <div class="row"><input id="code" placeholder="Room code" maxlength="5" style="text-transform:uppercase"><button class="btn" id="bj">Join</button></div>
       <div id="lmsg"></div>
@@ -196,7 +244,7 @@ input:focus,select:focus{border-color:var(--g)}
   </div>
 </div>
 
-<!-- GAME -->
+<!-- GAME (2 players) -->
 <div id="game" class="screen hide"><div class="gwrap">
   <div class="bcol">
     <div class="bar"><div class="who"><div class="av" id="avt"></div><div id="nt"></div></div><div class="clock" id="ct">--:--</div></div>
@@ -213,42 +261,93 @@ input:focus,select:focus{border-color:var(--g)}
   </div>
 </div></div>
 
+<!-- GAME (3 players) -->
+<div id="tri" class="screen hide"><div class="gwrap">
+  <div class="bcol">
+    <div class="tbars" id="tbars"></div>
+    <div id="tboard"></div>
+  </div>
+  <div class="side">
+    <div class="stat" id="tstat"></div>
+    <div id="tmoves"></div>
+    <div class="acts"><button class="btn red" id="tres">⚑ Resign</button></div>
+  </div>
+</div></div>
+
 <div id="modal" class="hide"><div class="card" id="mc"></div></div>
 <div id="toast"></div>
 <canvas id="rain"></canvas>
 
 <script src="chess.js"></script>
+<script src="tri.js"></script>
 <script>
 /* ======== CONFIG ======== */
 const WS_URL = 'wss://efeciis.duckdns.org';
 const PIECES = '';                            // folder of piece images, e.g. 'img/' ('' = same folder)
 /* ======================== */
-const C = Chess, $ = id => document.getElementById(id);
-let ws, me = null, G = null, mode = 'login', waiting = false;
+const C = Chess, T = Tri, $ = id => document.getElementById(id);
+let ws, me = null, G = null, TG = null, mode = 'login', waiting = false, nSel = 2;
 const send = o => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
-const show = id => ['auth', 'lobby', 'game'].forEach(x => $(x).classList.toggle('hide', x !== id));
+const show = id => ['auth', 'lobby', 'game', 'tri'].forEach(x => $(x).classList.toggle('hide', x !== id));
 function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 3200); }
+
+/* ---------- settings (saved in this browser) ---------- */
+const TH = { Green: ['#ebecd0', '#779556'], Brown: ['#f0d9b5', '#b58863'], Blue: ['#dee3e6', '#8ca2ad'], Gray: ['#e0e0e0', '#8a8a8a'], Purple: ['#e8dff0', '#8877b3'] };
+const SETS = [['sound', '🔊 Sound effects'], ['hints', 'Legal move hints'], ['coords', 'Board coordinates'], ['anim', 'Animations'], ['fx', 'Lobby weather effects'], ['confirm', 'Confirm before resigning']];
+let S = { theme: 'Green', sound: true, hints: true, coords: true, anim: true, fx: true, confirm: true };
+try { Object.assign(S, JSON.parse(localStorage.getItem('cset') || '{}')); } catch {}
+if (!TH[S.theme]) S.theme = 'Green';
+function applyS() {
+  const [l, d] = TH[S.theme]; document.documentElement.style.setProperty('--l', l); document.documentElement.style.setProperty('--d', d);
+  document.body.classList.toggle('nocoord', !S.coords); document.body.classList.toggle('noanim', !S.anim);
+  if (!S.fx) rainStop();
+  try { localStorage.setItem('cset', JSON.stringify(S)); } catch {}
+}
+$('theme').innerHTML = Object.keys(TH).map(k => `<option>${k}</option>`).join(''); $('theme').value = S.theme;
+$('theme').onchange = () => { S.theme = $('theme').value; applyS(); };
+$('sets').innerHTML = SETS.map(([k, l]) => `<label class="sw"><span>${l}</span><input type="checkbox" data-k="${k}" ${S[k] ? 'checked' : ''}></label>`).join('');
+$('sets').querySelectorAll('input').forEach(i => i.onchange = () => { S[i.dataset.k] = i.checked; applyS(); });
+applyS();
+let AC;
+function snd(f = 420, d = .06) {
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.value = .08;
+    o.connect(g); g.connect(AC.destination); o.start(); g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + d); o.stop(AC.currentTime + d);
+  } catch {}
+}
+$('pwb').onclick = () => {
+  $('mc').innerHTML = `<h2>Change password</h2><input id="pw0" type="password" placeholder="Current password"><input id="pw1" type="password" placeholder="New password (min 6)"><button class="btn big" id="pws">Save</button><button class="btn" id="pwc">Cancel</button>`;
+  $('pws').onclick = () => { send({ t: 'passwd', o: $('pw0').value, n: $('pw1').value }); $('modal').classList.add('hide'); };
+  $('pwc').onclick = () => $('modal').classList.add('hide');
+  $('modal').classList.remove('hide');
+};
 
 /* ---------- connection ---------- */
 function connect() {
   ws = new WebSocket(WS_URL);
   ws.onopen = () => { $('conn').classList.add('hide'); const t = localStorage.getItem('ctoken'); if (t) send({ t: 'token', token: t }); };
-  ws.onclose = () => { $('conn').classList.remove('hide'); setTimeout(connect, 2000); };
+  ws.onclose = () => { $('conn').classList.remove('hide'); if (waiting) setWait(false); setTimeout(connect, 2000); };
   ws.onmessage = e => onMsg(JSON.parse(e.data));
 }
 function onMsg(m) {
   switch (m.t) {
-    case 'auth': me = m; localStorage.setItem('ctoken', m.token); profile(); if (!G) show('lobby'); break;
-    case 'noauth': localStorage.removeItem('ctoken'); me = null; G = null; show('auth'); break;
+    case 'auth': me = m; localStorage.setItem('ctoken', m.token); profile(); if (!G && !TG) show('lobby'); break;
+    case 'noauth': localStorage.removeItem('ctoken'); me = null; G = null; TG = null; show('auth'); break;
     case 'err': if (!me) $('aerr').textContent = m.m; else { toast(m.m); setWait(false); } break;
     case 'info': toast(m.m); break;
+    case 'stats': if (me) { me.s = m.s; me.rating = m.r; profile(); } break;
     case 'renamed': me.u = m.u; profile(); if ($('enm')) $('enm').value = m.u; toast('Username updated ✓'); break;
-    case 'queued': setWait(true, 'Searching for an opponent…'); break;
-    case 'room': setWait(true, 'Share this code with your friend: ' + m.code); break;
+    case 'queued': setWait(true, m.n === 3 ? `Searching for players… (${m.have}/3)` : 'Searching for an opponent…'); break;
+    case 'room': setWait(true, `Share this code with your friend${m.n === 3 ? 's' : ''}: ${m.code}` + (m.n === 3 ? ` (${m.have}/3)` : '')); break;
     case 'game': startGame(m); break;
     case 'move': if (G) { applyWire(m.m); G.clock = m.clock; G.t0 = Date.now(); render(); runPre(); } break;
     case 'draw': toast('Opponent offers a draw – press ½ Draw to accept'); break;
     case 'over': endGame(m); break;
+    case 'tgame': startTri(m); break;
+    case 'tmove': if (TG) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); } break;
+    case 'tover': tEnd(m); break;
   }
 }
 function setWait(on, txt) { waiting = on; $('lmsg').textContent = on ? txt : ''; $('bx').classList.toggle('hide', !on); if (on) rainStart(tcCat); else rainStop(); }
@@ -263,11 +362,12 @@ $('go').onclick = () => {
   $('aerr').textContent = ''; send({ t: mode, u, p });
 };
 ['u', 'p', 'p2'].forEach(i => $(i).addEventListener('keydown', e => e.key === 'Enter' && $('go').click()));
-$('lo').onclick = () => { send({ t: 'logout' }); localStorage.removeItem('ctoken'); me = null; show('auth'); };
+$('lo').onclick = () => { send({ t: 'logout' }); localStorage.removeItem('ctoken'); me = null; G = null; TG = null; show('auth'); };
 
 /* ---------- lobby UI ---------- */
 const AVS = ['♞', '🐺', '🦊', '🐼', '🦁', '🐯', '🐸', '🐙', '🦉', '🐲', '👑', '🚀', '🔥', '💎', '🧠', '🎯'];
 function setAv(el, a, pic, emoji) {
+  if (!el) return;
   if (pic) { el.textContent = ''; el.style.background = `center/cover url("${pic}")`; return; }
   if (emoji) { el.textContent = emoji; el.style.background = '#4a4642'; return; }
   a = a || 0; el.textContent = AVS[a % AVS.length]; el.style.background = `hsl(${a * 23 + 90} 45% 38%)`;
@@ -276,6 +376,8 @@ function profile() {
   $('uname').textContent = me.u; $('urate').textContent = '★ ' + me.rating;
   $('pname').textContent = me.u; $('prate').textContent = '★ ' + me.rating + ' Elo';
   setAv($('tav'), me.a, me.pic); setAv($('pav'), me.a, me.pic);
+  const s = me.s || {}, b = (n, l) => `<div><b>${n || 0}</b><small>${l}</small></div>`;
+  $('pst').innerHTML = b(s.g, 'Games') + b(s.w, 'Wins') + b(s.d, 'Draws') + b(s.l, 'Losses') + b(s.g3, '3P games') + b(s.p1, '3P 🥇') + b(s.p2, '3P 🥈') + b(s.p3, '3P 🥉');
 }
 function readImg(f) {
   return new Promise((ok, no) => {
@@ -313,8 +415,12 @@ const TCS = [['Bullet', [[60, 0], [120, 1]]], ['Blitz', [[180, 0], [180, 2], [30
 let tcSel = [300, 0], tcCat = 'Blitz';
 $('tcs').innerHTML = TCS.map(([n, l]) => `<div class="cat">${IC[n](CC[n])}${n}</div><div class="tcg">` + l.map(([b, i]) => `<button class="tc ${b === 300 && i === 0 ? 'on' : ''}" data-b="${b}" data-i="${i}" data-n="${n}">${IC[n](CC[n])}<span>${b / 60}${i ? ' | ' + i : ' min'}</span></button>`).join('') + '</div>').join('');
 $('tcs').querySelectorAll('.tc').forEach(t => t.onclick = () => { $('tcs').querySelectorAll('.tc').forEach(x => x.classList.remove('on')); t.classList.add('on'); tcSel = [+t.dataset.b, +t.dataset.i]; tcCat = t.dataset.n; rainBurst(tcCat); });
-$('bq').onclick = () => send({ t: 'queue', tc: tcSel });
-$('bc').onclick = () => send({ t: 'create', tc: tcSel });
+$('pm').querySelectorAll('button').forEach(b => b.onclick = () => {
+  nSel = +b.dataset.n; $('pm').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  $('bb').classList.toggle('hide', nSel === 3); $('n3').classList.toggle('hide', nSel !== 3);
+});
+$('bq').onclick = () => send({ t: 'queue', tc: tcSel, n: nSel });
+$('bc').onclick = () => send({ t: 'create', tc: tcSel, n: nSel });
 $('bj').onclick = () => send({ t: 'join', code: $('code').value });
 $('bx').onclick = () => { send({ t: 'cancel' }); setWait(false); };
 
@@ -322,10 +428,10 @@ $('bx').onclick = () => { send({ t: 'cancel' }); setWait(false); };
 function applyWire(w) {
   const m = C.find(G.st, w); if (!m) return;
   G.san.push(C.san(G.st, m)); G.st = C.apply(G.st, m); G.last = m; G.sel = null; G.arrows = []; G.hls = []; (G.mv || (G.mv = [])).push(w); G.legal = C.legal(G.st);
-  if (G.live) { G.anim = [m]; if (m.ca) G.anim.push({ fr: m.fr, fc: m.ca === 'K' ? 7 : 0, tr: m.tr, tc: m.ca === 'K' ? 5 : 3 }); }
+  if (G.live) { G.anim = [m]; if (m.ca) G.anim.push({ fr: m.fr, fc: m.ca === 'K' ? 7 : 0, tr: m.tr, tc: m.ca === 'K' ? 5 : 3 }); snd(m.cap ? 260 : 420); }
 }
 function startGame(m) {
-  setWait(false);
+  setWait(false); TG = null;
   G = { id: m.id, color: m.color, w: m.white, b: m.black, st: C.init(), san: [], last: null, sel: null, over: false };
   G.legal = C.legal(G.st);
   G.live = false; m.moves.forEach(applyWire); G.live = true; G.intro = true;
@@ -333,7 +439,7 @@ function startGame(m) {
   $('modal').classList.add('hide'); show('game'); render();
 }
 function endGame(m) {
-  if (!G) return; G.over = true; G.pres = []; G.mate = m.reason === 'checkmate';
+  if (!G || G.over) return; G.over = true; G.pres = []; G.mate = m.reason === 'checkmate';
   const r = m.result, mine = G.color === 'w' ? '1-0' : '0-1';
   const title = r === '1/2-1/2' ? 'Draw' : r === mine ? 'You Won! 🏆' : 'You Lost';
   const old = me.rating; me.rating = m.ratings[G.color]; profile();
@@ -344,6 +450,7 @@ function endGame(m) {
   $('mrv').onclick = () => { $('modal').classList.add('hide'); startReview(); };
   if ($('mr')) $('mr').onclick = () => startBot(G.lv, G.color === 'w' ? 'b' : 'w');
   $('mv').onclick = () => { $('modal').classList.add('hide'); overStat(); };
+  snd(r === mine ? 660 : 200, .25);
   render();
 }
 function render() {
@@ -361,14 +468,14 @@ function render() {
     if ((G.pres || []).some(q => (q.fr === r && q.fc === c) || (q.tr === r && q.tc === c))) cl += ' pre';
     { const hl = (G.hls || []).find(h => h.r === r && h.c === c); if (hl) cl += ' hl-' + hl.col; }
     if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate && (!G.rv || G.rv.i === G.rv.n) ? ' mate' : '');
-    const t = tgt.some(m => m.tr === r && m.tc === c);
+    const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
     h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
       (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (G.rv && G.rv.cur && G.rv.cur.tr === r && G.rv.cur.tc === c ? `<span class="bdg" style="background:${CL[G.rv.cur.cls].c}">${CL[G.rv.cur.cls].s}</span>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
   }
   $('board').innerHTML = h;
   $('board').classList.toggle('enter', !!G.intro); G.intro = false;
   if (G.anim) {
-    for (const m of G.anim) {
+    if (S.anim) for (const m of G.anim) {
       const im = $('board').querySelector(`.sq[data-r="${m.tr}"][data-c="${m.tc}"] img`); if (!im) continue;
       const k = flip ? -1 : 1;
       im.style.transition = 'none'; im.style.zIndex = 9;
@@ -396,7 +503,7 @@ function clocks() {
     e.className = 'clock' + (run ? ' act' : '') + (run && t < 20000 ? ' low' : '');
   }
 }
-setInterval(clocks, 100);
+setInterval(() => { clocks(); tClocks(); }, 100);
 
 /* ---------- input: click + drag ---------- */
 const mayMove = () => G && !G.over && G.st.turn === G.color;
@@ -463,7 +570,7 @@ function runPre() {
   if (m) doMove(m); else { G.pres = []; render(); }
 }
 $('board').addEventListener('contextmenu', e => e.preventDefault());
-$('br').onclick = () => { if (!G || G.over || !confirm('Resign this game?')) return; if (G.bot) endGame({ result: G.color === 'w' ? '0-1' : '1-0', reason: 'resignation', ratings: { w: me.rating, b: me.rating } }); else send({ t: 'resign' }); };
+$('br').onclick = () => { if (!G || G.over || (S.confirm && !confirm('Resign this game?'))) return; if (G.bot) endGame({ result: G.color === 'w' ? '0-1' : '1-0', reason: 'resignation', ratings: { w: me.rating, b: me.rating } }); else send({ t: 'resign' }); };
 $('bd').onclick = () => { if (!G || G.over) return; if (!G.bot) return send({ t: 'draw' }); const bv = (G.color === 'w' ? -1 : 1) * evalS(G.st); if (bv < -150) endGame({ result: '1/2-1/2', reason: 'agreement', ratings: { w: me.rating, b: me.rating } }); else toast('The bot declined your draw offer'); };
 
 /* ---------- BOTS (runs in your browser) ---------- */
@@ -691,6 +798,90 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
 });
 
+/* ---------- 3-PLAYER CHESS ---------- */
+const TCOL = ['#e5483f', '#3f8be5', '#f1c40f'], TNAME = ['Red', 'Blue', 'Yellow'];
+const GL = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟\uFE0E' };
+const sqn = (r, c) => 'abcdefghijklmn'[c] + (14 - r);
+function startTri(m) {
+  setWait(false); G = null;
+  TG = { id: m.id, idx: m.idx, pl: m.players, st: T.init(), mv: [], log: [], clock: m.clock, t0: Date.now(), sel: null, last: null, over: false, legal: [] };
+  m.moves.forEach(e => tApply(e, false));
+  $('modal').classList.add('hide'); show('tri'); tRender();
+}
+function tApply(e, live) {
+  let st = TG.st;
+  if (Array.isArray(e)) {
+    const m = T.find(st, e); if (!m) return;
+    const pc = st.b[m.fr][m.fc], cap = st.b[m.tr][m.tc], who = +pc[0];
+    TG.log.push({ p: who, txt: `${GL[pc[1]]} ${sqn(m.fr, m.fc)} → ${sqn(m.tr, m.tc)}${cap ? ' ✕' : ''}` });
+    TG.last = m; st = T.apply(st, m); if (live) snd(cap ? 260 : 420);
+  } else { st = T.elim(st, e.e, e.r); TG.last = null; }
+  TG.mv.push(e); TG.st = st; TG.sel = null;
+  for (const x of st.ev) { TG.log.push({ p: x.p, txt: `☠ ${TNAME[x.p]} out – ${x.why}` }); if (live) { toast(`${TNAME[x.p]} (${TG.pl[x.p].u}) is out: ${x.why}`); snd(160, .3); } }
+  TG.legal = !T.over(st) && st.turn === TG.idx ? T.legal(st) : [];
+}
+function tRender() {
+  const st = TG.st, seat = TG.idx;
+  const inv = (i, j) => seat === 0 ? [i, j] : seat === 1 ? [j, 13 - i] : [13 - i, 13 - j];
+  const tgt = TG.sel ? TG.legal.filter(m => m.fr === TG.sel[0] && m.fc === TG.sel[1]) : [];
+  const chk = new Set(); for (let p = 0; p < 3; p++) if (st.alive[p] && T.inCheck(st, p)) chk.add(T.kingPos(st.b, p).join());
+  let h = '';
+  for (let i = 0; i < 14; i++) for (let j = 0; j < 14; j++) {
+    const [r, c] = inv(i, j);
+    if (!T.ok(r, c)) { h += '<div class="tq x"></div>'; continue; }
+    const p = st.b[r][c]; let cl = 'tq ' + ((r + c) % 2 ? 'd' : 'l');
+    if (r >= 12 && c >= 3 && c <= 10) cl += ' z0'; else if (c <= 1 && r >= 3 && r <= 10) cl += ' z1'; else if (r <= 1 && c >= 3 && c <= 10) cl += ' z2';
+    const L = TG.last; if (L && ((L.fr === r && L.fc === c) || (L.tr === r && L.tc === c))) cl += ' last';
+    if (TG.sel && TG.sel[0] === r && TG.sel[1] === c) cl += ' sel';
+    if (chk.has(r + ',' + c)) cl += ' chk';
+    const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
+    h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (p ? `<span class="tp c${p[0]}">${GL[p[1]]}</span>` : '') + '</div>';
+  }
+  $('tboard').innerHTML = h;
+  $('tbars').innerHTML = [0, 1, 2].map(p => `<div class="tp3 ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}<small>${TNAME[p]} · ${TG.pl[p].r}</small></div><div class="tk" id="tk${p}">--:--</div></div>`).join('');
+  [0, 1, 2].forEach(p => setAv($('tav' + p), TG.pl[p].a, TG.pl[p].pic));
+  $('tmoves').innerHTML = TG.log.map(l => `<div class="tlog"><b style="background:${TCOL[l.p]}"></b>${l.txt}</div>`).join(''); $('tmoves').scrollTop = 1e6;
+  if (!TG.over) {
+    const own = st.turn === TG.idx, ck = st.alive[st.turn] && T.inCheck(st, st.turn);
+    $('tstat').style.color = ck ? '#ff7b7b' : '';
+    $('tstat').textContent = own ? (ck ? 'Your move – you are in check!' : 'Your move') : `${TG.pl[st.turn].u}'s move (${TNAME[st.turn]})` + (ck ? ' – check!' : '');
+  }
+  tClocks();
+}
+function tClocks() {
+  if (!TG) return;
+  for (let p = 0; p < 3; p++) {
+    const e = $('tk' + p); if (!e) continue;
+    const run = !TG.over && TG.st.alive[p] && TG.st.turn === p, t = TG.clock[p] - (run ? Date.now() - TG.t0 : 0);
+    e.textContent = TG.st.alive[p] ? fmt(t) : '☠'; e.classList.toggle('low', run && t < 20000);
+  }
+}
+$('tboard').addEventListener('click', e => {
+  if (!TG || TG.over) return;
+  const el = e.target.closest('.tq'); if (!el || !el.dataset.r) return;
+  const r = +el.dataset.r, c = +el.dataset.c, p = TG.st.b[r][c];
+  if (TG.st.turn !== TG.idx) return;
+  if (TG.sel) {
+    const m = TG.legal.find(x => x.fr === TG.sel[0] && x.fc === TG.sel[1] && x.tr === r && x.tc === c);
+    if (m) { send({ t: 'tmove', m: T.wire(m) }); TG.sel = null; tRender(); return; }
+  }
+  TG.sel = (p && +p[0] === TG.idx && !(TG.sel && TG.sel[0] === r && TG.sel[1] === c)) ? [r, c] : null; tRender();
+});
+$('tres').onclick = () => { if (!TG || TG.over || !TG.st.alive[TG.idx] || (S.confirm && !confirm('Resign this game?'))) return; send({ t: 'resign' }); };
+function tEnd(m) {
+  if (!TG || TG.over) return; TG.over = true; TG.sel = null;
+  const old = me.rating; me.rating = m.ratings[TG.idx]; profile();
+  const pos = m.rank.indexOf(TG.idx), d = m.deltas[TG.idx], med = ['🥇', '🥈', '🥉'];
+  $('mc').innerHTML = `<h2>${['You Won! 🏆', '2nd place 🥈', '3rd place 🥉'][pos]}</h2>` +
+    m.rank.map((p, i) => `<div class="rank"><b>${med[i]}</b><span style="color:${TCOL[p]}">●</span><span style="flex:1">${TG.pl[p].u}</span><small>${m.deltas[p] >= 0 ? '+' : ''}${m.deltas[p]}</small></div>`).join('') +
+    `<div style="font-size:18px">Rating ${me.rating} <b style="color:${d >= 0 ? 'var(--g)' : '#ff6b6b'}">(${d >= 0 ? '+' : ''}${d})</b></div><button class="btn big" id="tb">Back to lobby</button><button class="btn" id="tv">View board</button>`;
+  $('modal').classList.remove('hide');
+  $('tb').onclick = () => { $('modal').classList.add('hide'); TG = null; show('lobby'); };
+  $('tv').onclick = () => { $('modal').classList.add('hide'); $('tstat').innerHTML = 'Game over <button class="btn" id="tl2" style="padding:4px 10px;margin-left:6px">Lobby</button>'; $('tl2').onclick = () => { TG = null; show('lobby'); }; };
+  snd(pos === 0 ? 660 : 200, .25); tRender();
+  if (!$('tl2')) $('tstat').textContent = 'Game over';
+}
+
 /* ---------- lobby: floating cards you can drag & throw ---------- */
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const BODIES = [];
@@ -771,8 +962,8 @@ let rP = [], rBolts = [], rQueue = null, rBurst = 0, rBurstCat = 'Blitz', rRun =
 function rSize() { const d = Math.min(devicePixelRatio || 1, 2); RC.width = innerWidth * d; RC.height = innerHeight * d; rx.setTransform(d, 0, 0, d, 0, 0); }
 addEventListener('resize', rSize); rSize();
 function rKick() { if (!rRun) { rRun = true; rLast = performance.now(); requestAnimationFrame(rLoop); } }
-function rainBurst(cat) { if (RM) return; rBurst = 1.8; rBurstCat = cat; if (cat === 'Blitz') rBoltT = Math.min(rBoltT, .12); rKick(); }
-function rainStart(cat) { if (RM) return; rQueue = cat; if (cat === 'Blitz') rBoltT = Math.min(rBoltT, .3); rKick(); }
+function rainBurst(cat) { if (RM || !S.fx) return; rBurst = 1.8; rBurstCat = cat; if (cat === 'Blitz') rBoltT = Math.min(rBoltT, .12); rKick(); }
+function rainStart(cat) { if (RM || !S.fx) return; rQueue = cat; if (cat === 'Blitz') rBoltT = Math.min(rBoltT, .3); rKick(); }
 function rainStop() { rQueue = null; }
 function spawn(cat) {
   const bu = cat === 'Bullet';
