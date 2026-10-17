@@ -242,7 +242,7 @@ function onMsg(m) {
     case 'noauth': localStorage.removeItem('ctoken'); me = null; G = null; show('auth'); break;
     case 'err': if (!me) $('aerr').textContent = m.m; else { toast(m.m); setWait(false); } break;
     case 'info': toast(m.m); break;
-    case 'renamed': me.u = m.u; profile(); toast('Username updated ✓'); break;
+    case 'renamed': me.u = m.u; profile(); if ($('enm')) $('enm').value = m.u; toast('Username updated ✓'); break;
     case 'queued': setWait(true, 'Searching for an opponent…'); break;
     case 'room': setWait(true, 'Share this code with your friend: ' + m.code); break;
     case 'game': startGame(m); break;
@@ -297,7 +297,8 @@ function editProfile() {
   $('eup').onclick = () => $('efile').click();
   $('efile').onchange = e => { const f = e.target.files[0]; if (!f) return; readImg(f).then(u => { me.pic = u; send({ t: 'avatar', a: me.a, pic: u }); refresh(); }).catch(() => toast('Could not read that image')); };
   $('erm').onclick = () => { me.pic = null; send({ t: 'avatar', a: me.a, pic: null }); refresh(); };
-  $('esv').onclick = () => send({ t: 'rename', u: $('enm').value.trim() });
+  $('esv').onclick = () => { const u = $('enm').value.trim(); if (u.length < 3) return toast('Username must be at least 3 characters'); send({ t: 'rename', u }); };
+  $('enm').addEventListener('keydown', e => e.key === 'Enter' && $('esv').click());
   $('edn').onclick = () => $('modal').classList.add('hide');
   refresh(); $('modal').classList.remove('hide');
 }
@@ -332,7 +333,7 @@ function startGame(m) {
   $('modal').classList.add('hide'); show('game'); render();
 }
 function endGame(m) {
-  if (!G) return; G.over = true; G.pre = null; G.mate = m.reason === 'checkmate';
+  if (!G) return; G.over = true; G.pres = []; G.mate = m.reason === 'checkmate';
   const r = m.result, mine = G.color === 'w' ? '1-0' : '0-1';
   const title = r === '1/2-1/2' ? 'Draw' : r === mine ? 'You Won! 🏆' : 'You Lost';
   const old = me.rating; me.rating = m.ratings[G.color]; profile();
@@ -346,10 +347,10 @@ function endGame(m) {
   render();
 }
 function render() {
-  const s = G.rv ? G.rv.st : G.st, flip = G.color === 'b', top = flip ? 'w' : 'b', bot = G.color;
+  const real = G.rv ? G.rv.st : G.st, s = queued() ? virt() : real, flip = G.color === 'b', top = flip ? 'w' : 'b', bot = G.color;
   const P = c => G[c], nm = c => `${P(c).u} <small>(${P(c).r})</small>`;
   $('nt').innerHTML = nm(top); $('nb').innerHTML = nm(bot); setAv($('avt'), P(top).a, P(top).pic, P(top).emoji); setAv($('avb'), P(bot).a, P(bot).pic, P(bot).emoji);
-  const kp = C.inCheck(s) ? C.kingPos(s.b, s.turn) : null;
+  const kp = C.inCheck(real) ? C.kingPos(real.b, real.turn) : null;
   const tgt = G.sel ? (G.st.turn === G.color ? G.legal : preMoves()).filter(m => m.fr === G.sel[0] && m.fc === G.sel[1]) : [];
   let h = '';
   for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
@@ -357,7 +358,7 @@ function render() {
     let cl = 'sq ' + ((r + c) % 2 ? 'd' : 'l');
     { const LM = G.rv ? G.rv.last : G.last; if (LM && ((LM.fr === r && LM.fc === c) || (LM.tr === r && LM.tc === c))) cl += ' last'; }
     if (G.sel && G.sel[0] === r && G.sel[1] === c) cl += ' sel';
-    if (G.pre && ((G.pre.fr === r && G.pre.fc === c) || (G.pre.tr === r && G.pre.tc === c))) cl += ' pre';
+    if ((G.pres || []).some(q => (q.fr === r && q.fc === c) || (q.tr === r && q.tc === c))) cl += ' pre';
     { const hl = (G.hls || []).find(h => h.r === r && h.c === c); if (hl) cl += ' hl-' + hl.col; }
     if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate && (!G.rv || G.rv.i === G.rv.n) ? ' mate' : '');
     const t = tgt.some(m => m.tr === r && m.tc === c);
@@ -381,7 +382,7 @@ function render() {
   G.san.forEach((x, i) => { if (i % 2 === 0) mh += `<span class="n">${i / 2 + 1}.</span>`; mh += `<span class="${i === G.san.length - 1 ? 'cur' : ''}">${x}</span>`; });
   $('moves').innerHTML = mh; $('moves').scrollTop = 1e6;
   drawArrows(flip); syncReviewUI(); if (G.rv) rvPanel();
-  if (!G.over) $('stat').textContent = s.turn === G.color ? (kp ? 'Your move – you are in check!' : 'Your move') : (kp ? "Check! Opponent's move" : "Opponent's move");
+  if (!G.over) $('stat').textContent = real.turn === G.color ? (kp ? 'Your move – you are in check!' : 'Your move') : (kp ? "Check! Opponent's move" : "Opponent's move");
   $('stat').classList.toggle('chkt', !!kp && !G.over);
   clocks();
 }
@@ -427,7 +428,7 @@ $('board').addEventListener('dragstart', e => {
   const el = e.target.closest('.sq');
   if (!G || G.over || !el) return e.preventDefault();
   const r = +el.dataset.r, c = +el.dataset.c;
-  if (G.st.b[r][c][0] !== G.color) return e.preventDefault();
+  const vp = (G.st.turn === G.color ? G.st : virt()).b[r][c]; if (!vp || vp[0] !== G.color) return e.preventDefault();
   G.sel = [r, c]; e.dataTransfer.setData('text', 'x'); e.dataTransfer.effectAllowed = 'move';
 });
 $('board').addEventListener('dragover', e => e.preventDefault());
@@ -438,22 +439,28 @@ $('board').addEventListener('drop', e => {
   if (!tryTo(+el.dataset.r, +el.dataset.c)) render();
 });
 /* ---------- premove ---------- */
-const preMoves = () => C.legal({ ...G.st, turn: G.color, ep: null });
+const sameM = (x, q) => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc && (!x.pr || x.pr === 'q');
+// board as it will look after all queued premoves (opponent moves ignored)
+function virt() {
+  let v = { ...G.st, turn: G.color, ep: null };
+  for (const q of (G.pres || [])) { const m = C.legal(v).find(x => sameM(x, q)); if (!m) break; v = { ...C.apply(v, m), turn: G.color, ep: null }; }
+  return v;
+}
+const queued = () => G && G.pres && G.pres.length && !G.over && G.st.turn !== G.color;
+const preMoves = () => C.legal(virt());
 function preClick(r, c) {
-  const p = G.st.b[r][c];
+  const v = virt(), p = v.b[r][c];
   if (G.sel) {
-    const ms = preMoves().filter(m => m.fr === G.sel[0] && m.fc === G.sel[1] && m.tr === r && m.tc === c);
-    if (ms.length) { const m = ms.find(x => x.pr === 'q') || ms[0]; G.pre = { fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc }; G.sel = null; render(); return; }
+    const ms = C.legal(v).filter(m => m.fr === G.sel[0] && m.fc === G.sel[1] && m.tr === r && m.tc === c);
+    if (ms.length) { const m = ms.find(x => x.pr === 'q') || ms[0]; (G.pres = G.pres || []).push({ fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc }); G.sel = null; render(); return; }
   }
-  G.pre = null;
   G.sel = (p && p[0] === G.color && !(G.sel && G.sel[0] === r && G.sel[1] === c)) ? [r, c] : null;
   render();
 }
 function runPre() {
-  if (!G || !G.pre || G.over || G.st.turn !== G.color) return;
-  const q = G.pre; G.pre = null;
-  const m = G.legal.find(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc && (!x.pr || x.pr === 'q'));
-  if (m) doMove(m); else render();
+  if (!G || !G.pres || !G.pres.length || G.over || G.st.turn !== G.color) return;
+  const q = G.pres.shift(), m = G.legal.find(x => sameM(x, q));
+  if (m) doMove(m); else { G.pres = []; render(); }
 }
 $('board').addEventListener('contextmenu', e => e.preventDefault());
 $('br').onclick = () => { if (!G || G.over || !confirm('Resign this game?')) return; if (G.bot) endGame({ result: G.color === 'w' ? '0-1' : '1-0', reason: 'resignation', ratings: { w: me.rating, b: me.rating } }); else send({ t: 'resign' }); };
@@ -550,7 +557,7 @@ $('board').addEventListener('mouseup', e => {
   const r = +el.dataset.r, c = +el.dataset.c, col = e.shiftKey ? 'r' : e.ctrlKey ? 'y' : e.altKey ? 'b' : 'g';
   G.arrows = G.arrows || []; G.hls = G.hls || [];
   if (r === rcs[0] && c === rcs[1]) {
-    if (G.pre) { G.pre = null; G.sel = null; }
+    if (queued()) { G.pres = []; G.sel = null; }
     else { const i = G.hls.findIndex(h => h.r === r && h.c === c), old = i >= 0 ? G.hls.splice(i, 1)[0] : null; if (!old || old.col !== col) G.hls.push({ r, c, col }); }
   } else {
     const i = G.arrows.findIndex(a => a.fr === rcs[0] && a.fc === rcs[1] && a.tr === r && a.tc === c), old = i >= 0 ? G.arrows.splice(i, 1)[0] : null;
@@ -618,7 +625,7 @@ function overStat() {
 async function startReview() {
   if (!G || !G.over) return;
   const n = (G.mv || []).length; if (!n) return toast('No moves to review');
-  G.pre = null; G.sel = null; G.arrows = []; G.hls = [];
+  G.pres = []; G.sel = null; G.arrows = []; G.hls = [];
   let s = C.init(); const states = [s], mvs = [], sans = [];
   for (const w of G.mv) { const m = C.find(s, w); mvs.push(m); sans.push(C.san(s, m)); s = C.apply(s, m); states.push(s); }
   const rv = G.rv = { states, mvs, sans, an: [], pv: [], cls: [], n, i: 0, st: states[0], last: null, cur: null, barrow: null, ready: false, prog: 0 };
