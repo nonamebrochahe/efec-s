@@ -1145,7 +1145,7 @@ function tApply(e, live) {
   if (Array.isArray(e)) {
     const m = T.find(st, e); if (!m) return;
     const pc = st.b[m.fr][m.fc], cap = st.b[m.tr][m.tc], who = +pc[0];
-    TG.log.push({ p: who, txt: `${sqn(m.fr, m.fc)}${cap ? 'x' : '-'}${sqn(m.tr, m.tc)}${m.pr ? '=' + String(m.pr).toUpperCase() : ''}` });
+    TG.log.push({ p: who, txt: m.ca ? (m.ca === 'h' ? 'O-O' : 'O-O-O') : `${sqn(m.fr, m.fc)}${cap ? 'x' : '-'}${sqn(m.tr, m.tc)}${m.pr ? '=' + String(m.pr).toUpperCase() : ''}` });
     TG.last = m; if (live) TG.anim = m; st = T.apply(st, m);
   } else { st = T.elim(st, e.e, e.r); TG.last = null; }
   TG.mv.push(e); TG.st = st; TG.sel = null;
@@ -1194,13 +1194,18 @@ function tRender() {
   bd.classList.toggle('enter', !!TG.intro); TG.intro = false;
   if (TG.anim) {
     if (S.anim) {
-      const m = TG.anim, [ti, tj] = tFwd(seat, m.tr, m.tc), [fi, fj] = tFwd(seat, m.fr, m.fc);
-      const im = bd.children[ti * Cn + tj] && bd.children[ti * Cn + tj].querySelector('img');
-      if (im) {
-        im.style.transition = 'none'; im.style.zIndex = 9; im.style.transform = `translate(${(fj - tj) * 100}%,${(fi - ti) * 100}%)`;
+      const m = TG.anim;
+      const slide = (fr, fc, tr, tc) => {
+        const [ti, tj] = tFwd(seat, tr, tc), [fi, fj] = tFwd(seat, fr, fc);
+        const im = bd.children[ti * Cn + tj] && bd.children[ti * Cn + tj].querySelector('img');
+        if (!im) return;
+        im.style.transition = 'none'; im.style.zIndex = 9;
+        im.style.transform = `translate(${(fj - tj) * 100}%,${(fi - ti) * 100}%)`;
         im.getBoundingClientRect();
         im.style.transition = 'transform .25s cubic-bezier(.3,.8,.3,1)'; im.style.transform = '';
-      }
+      };
+      slide(m.fr, m.fc, m.tr, m.tc);
+      if (m.rf) slide(m.rf[0], m.rf[1], m.rt[0], m.rt[1]);
     }
     TG.anim = null;
   }
