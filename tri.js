@@ -1,13 +1,13 @@
 /*
   Efecıııs – 3-Player Chess engine (shared by server.js and index.html)
-  Board: 14x14 cross (3x3 corners removed). Seats: 0 = Red (bottom), 1 = Blue (left), 2 = Yellow (top).
+  Board: 14 rows x 11 cols T-shape (the empty 4th arm is cut off, 3x3 corners removed). Seats: 0 = Red (bottom), 1 = Blue (left), 2 = Yellow (top).
   Turn order 0 -> 1 -> 2. Every other player is your enemy (free-for-all).
   Rules: no castling / en passant, pawns auto-promote to queen, you may not leave your king attacked,
   capturing a king knocks that player out, checkmate/stalemate/timeout/resign eliminate a player.
   Last player standing wins; 2nd = last one eliminated, 3rd = first eliminated.
 */
 (function (root) {
-  const N = 14, ok = (r, c) => r >= 0 && r < N && c >= 0 && c < N && !((r < 3 || r > 10) && (c < 3 || c > 10));
+  const N = 14, ok = (r, c) => r >= 0 && r < N && c >= 0 && c <= 10 && !((r < 3 || r > 10) && c < 3);
   const DIR = [[-1, 0], [0, 1], [1, 0]], ST = [12, 1, 1], BACK = 'rnbqkbnr';
   const KN = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]];
   const OR = [[1, 0], [-1, 0], [0, 1], [0, -1]], DG = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
