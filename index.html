@@ -289,6 +289,13 @@ input:focus,select:focus{border-color:var(--g)}
  #tri #tacts{padding:7px}
 }
 
+
+/* Material advantage indicators (Chess.com-style +N) */
+.matadv{display:inline-flex;align-items:center;justify-content:center;min-width:27px;padding:1px 5px;border-radius:5px;background:#252321;color:#a8d56d;font-size:12px;font-weight:800;line-height:1.5;margin-left:5px;white-space:nowrap}
+.matadv:empty{display:none}
+.tadv{display:inline-flex;align-items:center;justify-content:center;min-width:25px;margin-left:5px;padding:1px 4px;border-radius:4px;background:#252321;color:#a8d56d;font-size:11px;font-weight:800;line-height:1.4;white-space:nowrap}
+.tadv:empty{display:none}
+@media(max-width:600px){.matadv{font-size:11px;min-width:23px;padding:1px 4px}}
 </style>
 </head>
 <body>
@@ -347,10 +354,10 @@ input:focus,select:focus{border-color:var(--g)}
 <!-- GAME (2 players) -->
 <div id="game" class="screen hide"><div class="gwrap">
   <div class="bcol">
-    <div class="bar"><div class="who"><div class="av" id="avt"></div><div id="nt"></div></div><div class="clock" id="ct">--:--</div></div>
+    <div class="bar"><div class="who"><div class="av" id="avt"></div><div id="nt"></div><span class="matadv" id="advt"></span></div><div class="clock" id="ct">--:--</div></div>
     <div id="evb" class="hide"><div id="evw"></div><span id="evt"></span></div>
     <div id="bw"><div id="board"></div><svg id="ar" viewBox="0 0 800 800"></svg></div>
-    <div class="bar"><div class="who"><div class="av" id="avb"></div><div id="nb"></div></div><div class="clock" id="cb">--:--</div></div>
+    <div class="bar"><div class="who"><div class="av" id="avb"></div><div id="nb"></div><span class="matadv" id="advb"></span></div><div class="clock" id="cb">--:--</div></div>
   </div>
   <div class="side">
     <div class="stat" id="stat"></div>
@@ -551,6 +558,7 @@ function render() {
   const real = G.rv ? G.rv.st : G.st, s = queued() ? virt() : real, flip = G.color === 'b', top = flip ? 'w' : 'b', bot = G.color;
   const P = c => G[c], nm = c => `${P(c).u} <small>(${P(c).r})</small>`;
   $('nt').innerHTML = nm(top); $('nb').innerHTML = nm(bot); setAv($('avt'), P(top).a, P(top).pic, P(top).emoji); setAv($('avb'), P(bot).a, P(bot).pic, P(bot).emoji);
+  updateMaterial2(real, top, bot);
   const kp = C.inCheck(real) ? C.kingPos(real.b, real.turn) : null;
   const tgt = G.sel ? (G.st.turn === G.color ? G.legal : preMoves()).filter(m => m.fr === G.sel[0] && m.fc === G.sel[1]) : [];
   let h = '';
@@ -703,6 +711,36 @@ function botMove() {
   localMove(m);
 }
 const PV = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+// Material only: display whole pawn units like chess.com (+3, +13, etc.).
+const MAT_UNIT = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+function materialByColor(s) {
+  const v = { w: 0, b: 0 };
+  for (const row of s.b) for (const p of row) if (p) v[p[0]] += MAT_UNIT[p[1]] || 0;
+  return v;
+}
+function updateMaterial2(s, top, bottom) {
+  const v = materialByColor(s), d = v.w - v.b;
+  const adv = { w: Math.max(0, d), b: Math.max(0, -d) };
+  const te = $('advt'), be = $('advb');
+  if (te) te.textContent = adv[top] > 0 ? '+' + adv[top] : '';
+  if (be) be.textContent = adv[bottom] > 0 ? '+' + adv[bottom] : '';
+}
+function materialByPlayer3(s) {
+  const v = [0, 0, 0];
+  for (const row of s.b) for (const p of row) if (p) v[+p[0]] += MAT_UNIT[p[1]] || 0;
+  return v;
+}
+function updateMaterial3(s) {
+  const v = materialByPlayer3(s);
+  for (let p = 0; p < 3; p++) {
+    const e = $('ta' + p); if (!e) continue;
+    const other = Math.max(...v.filter((_, i) => i !== p));
+    const d = v[p] - other;
+    e.textContent = d > 0 ? '+' + d : '';
+    e.title = d > 0 ? `Material advantage: +${d} pawns` : '';
+  }
+}
+
 function evalS(s) {
   let v = 0;
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -991,7 +1029,7 @@ function tRender() {
     TG.anim = null;
   }
   const wide = innerWidth >= 1000; $('tri').classList.toggle('wide', wide);
-  const pill = (p, v) => `<div class="tp3 ${v ? 'v ' : ''}${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${String(TG.pl[p].u).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}</span><small>${TNAME[p]} · ${TG.pl[p].r}</small></div><div class="tk" id="tk${p}">--:--</div></div>`;
+  const pill = (p, v) => `<div class="tp3 ${v ? 'v ' : ''}${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${String(TG.pl[p].u).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}</span><small>${TNAME[p]} · ${TG.pl[p].r}</small></div><span class="tadv" id="ta${p}"></span><div class="tk" id="tk${p}">--:--</div></div>`;
   const box = { top: '', bottom: '', left: '', right: '' };
   if (wide) for (let p = 0; p < 3; p++) { const sd = tSide(seat, p); box[sd] += pill(p, sd === 'left' || sd === 'right'); }
   else box.bottom = [0, 1, 2].map(p => pill(p, false)).join('');
@@ -999,6 +1037,7 @@ function tRender() {
   $('pbot').classList.toggle('row', !wide);
   [0, 1, 2].forEach(p => setAv($('tav' + p), TG.pl[p].a, TG.pl[p].pic));
   $('tmoves').innerHTML = TG.log.map(l => `<div class="tlog"><b style="background:${TCOL[l.p]}"></b>${l.txt}</div>`).join(''); $('tmoves').scrollTop = 1e6;
+  updateMaterial3(st);
   const out = !st.alive[TG.idx];
   if (!TG.over) {
     if (out) { $('tstat').style.color = ''; $('tstat').innerHTML = 'You are out – watching <button class="btn" id="tl3" style="padding:4px 10px;margin-left:6px">Lobby</button>'; $('tl3').onclick = tLeave; }
