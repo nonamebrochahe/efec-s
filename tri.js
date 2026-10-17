@@ -2,7 +2,7 @@
   Efecıııs – 3-Player Chess engine (shared by server.js and index.html)
   Board: 14 rows x 11 cols T-shape (the empty 4th arm is cut off, 3x3 corners removed). Seats: 0 = Red (bottom), 1 = Blue (left), 2 = Yellow (top).
   Turn order 0 -> 1 -> 2. Every other player is your enemy (free-for-all).
-  Rules: no castling / en passant, pawns auto-promote to queen, you may not leave your king attacked,
+  Rules: no castling / en passant, pawns never promote (they just stop at the far edge), you may not leave your king attacked,
   capturing a king knocks that player out, checkmate/stalemate/timeout/resign eliminate a player.
   Last player standing wins; 2nd = last one eliminated, 3rd = first eliminated.
 */
@@ -11,7 +11,6 @@
   const DIR = [[-1, 0], [0, 1], [1, 0]], ST = [12, 1, 1], BACK = 'rnbqkbnr';
   const KN = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]];
   const OR = [[1, 0], [-1, 0], [0, 1], [0, -1]], DG = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
-  const prom = (p, r, c) => p === 0 ? r <= 6 : p === 1 ? c >= 7 : r >= 7;
 
   function init() {
     const b = Array.from({ length: N }, () => Array(N).fill(null));
@@ -62,7 +61,6 @@
   const inCheck = (s, p) => { const k = kingPos(s.b, p); return !!k && attacked(s, s.b, k[0], k[1], p); };
   function mk(b, m) {
     const n = b.map(r => r.slice()); let x = n[m.fr][m.fc]; n[m.fr][m.fc] = null;
-    if (x[1] === 'p' && prom(+x[0], m.tr, m.tc)) x = x[0] + 'q';
     n[m.tr][m.tc] = x; return n;
   }
   function legal(s) {
