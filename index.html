@@ -261,6 +261,8 @@ input:focus,select:focus{border-color:var(--g)}
 #tri .tp3 .tk{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:66px;padding:7px 8px;background:#242321;color:#e7e7e7;border-radius:4px;font:700 17px/1 ui-monospace,Consolas,monospace;letter-spacing:0;border:0;outline:0;box-shadow:none;white-space:nowrap}
 #tri .tp3 .tk.low{background:#a83232;color:#fff}
 #tri .tp3 .av{width:28px;height:28px;flex:none;box-shadow:none;outline:0}
+#tri .tp3.v{max-width:175px;width:175px;padding:6px 7px;border-top:0;border-left:3px solid var(--pc);flex-direction:row;text-align:left}
+#tri .vs{width:175px;max-width:175px;gap:7px;flex:none}
 #tri .tmid{gap:8px}
 #tri .tside{gap:6px}
 #tri .tside .tp3{min-height:48px}
@@ -272,6 +274,7 @@ input:focus,select:focus{border-color:var(--g)}
 @media(max-width:1200px) and (min-width:1000px){
  #tri.wide{--s:min(calc(100vw - 560px),calc(100dvh - 190px),600px)}
  #tri.wide .side{width:245px;min-width:225px}
+ #tri .vs,#tri .tp3.v{width:135px;max-width:135px}
  #tri .tp3 .tk{min-width:58px;font-size:14px;padding:6px 5px}
  #tri .tp3 .av{width:24px;height:24px}
 }
@@ -286,29 +289,20 @@ input:focus,select:focus{border-color:var(--g)}
  #tri #tacts{padding:7px}
 }
 
-/* Final 3-player fixes: equal compact player boxes, stable pointer input */
-#tri .tp3{min-width:0;overflow:hidden;transform:none!important}
-#tri .tp3 .nm,#tri .tp3 .uname,#tri .tp3 .nm small{max-width:none}
-#tri .tp3 .tk{min-width:54px;font-size:14px;padding:6px 5px}
-#tboard{touch-action:none;-webkit-user-select:none;user-select:none}
-#tboard .tq{touch-action:none;-webkit-user-select:none;user-select:none}
-/* every player box has exactly the same compact size */
-#tri .tp3,#tri .tp3.v{flex:none;width:170px;min-width:170px;max-width:170px;min-height:46px;padding:5px 6px;gap:6px}
-#tri .tp3 .uname{font-size:12px}
-#tri .tp3 .nm small{font-size:10px}
-#tri .tp3 .tk{min-width:50px;font-size:14px;padding:6px 4px}
-#tri .tp3 .tadv{margin-left:0}
-#tri .tside{justify-content:center;width:100%}
-#tri .vs{width:170px;max-width:170px;flex:none}
-@media(max-width:1200px) and (min-width:1000px){
- #tri .tp3,#tri .tp3.v,#tri .vs{width:150px;min-width:150px;max-width:150px}
- #tri .tp3 .tk{min-width:46px;font-size:12px}
-}
-@media(max-width:999px){
- #tri .tside{gap:4px}
- #tri .tp3,#tri .tp3.v{flex:1 1 0;width:auto;min-width:0;max-width:none;padding:4px;gap:4px}
- #tri .tp3 .tk{min-width:46px;font-size:12px}
-}
+/* Final 3-player fixes */
+#tri .tp3{min-width:0;overflow:hidden;}
+#tri .tp3 .nm{min-width:0;max-width:112px;flex:1 1 80px;overflow:hidden;}
+#tri .tp3 .uname{display:block;max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:1.1;}
+#tri .tp3 .nm small{max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;line-height:1.1;}
+#tri .tp3 .tk{min-width:54px;font-size:14px;padding:6px 5px;}
+#tboard{touch-action:none;-webkit-user-select:none;user-select:none;}
+#tboard .tq{touch-action:none;-webkit-user-select:none;user-select:none;}
+#tri #tmoves{min-height:100px;}
+#tri .tp3.orient-top{transform:rotate(180deg)}
+#tri .tp3.orient-left{transform:rotate(90deg)}
+#tri .tp3.orient-right{transform:rotate(-90deg)}
+@media(max-width:1200px) and (min-width:1000px){#tri .tp3 .nm,#tri .tp3 .uname,#tri .tp3 .nm small{max-width:82px}#tri .tp3 .tk{min-width:48px;font-size:12px}}
+@media(max-width:999px){#tri .tp3 .nm,#tri .tp3 .uname,#tri .tp3 .nm small{max-width:125px}#tri .tp3 .tk{min-width:52px;font-size:12px}}
 
 /* Material advantage indicators */
 .matadv{display:inline-flex;align-items:center;justify-content:center;min-width:27px;padding:1px 5px;border-radius:5px;background:#252321;color:#a8d56d;font-size:12px;font-weight:800;line-height:1.5;margin-left:5px;white-space:nowrap}
@@ -316,6 +310,19 @@ input:focus,select:focus{border-color:var(--g)}
 .tadv{display:inline-flex;align-items:center;justify-content:center;min-width:25px;margin-left:5px;padding:1px 4px;border-radius:4px;background:#252321;color:#a8d56d;font-size:11px;font-weight:800;line-height:1.4;white-space:nowrap}
 .tadv:empty{display:none}
 @media(max-width:600px){.matadv{font-size:11px;min-width:23px;padding:1px 4px}}
+
+/* ===== 3P: ALL player cards SAME SIZE (fixed width, short names) ===== */
+#tri .tp3,#tri .tp3.v{width:200px;min-width:200px;max-width:200px;flex:none;height:50px;min-height:50px;overflow:hidden}
+#tri .tside{justify-content:center}
+#tri .tp3 .nm{width:84px;min-width:84px;max-width:84px;flex:none}
+#tri .tp3 .uname,#tri .tp3 .nm small{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tri .tp3 .tk{width:58px;min-width:58px;padding:6px 0;text-align:center}
+#tri .vs{width:200px;max-width:200px}
+@media(max-width:999px){
+  #tri .tp3,#tri .tp3.v{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .nm{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .uname,#tri .tp3 .nm small{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -468,7 +475,7 @@ function onMsg(m) {
     case 'draw': toast('Opponent offers a draw – press ½ Draw to accept'); break;
     case 'over': endGame(m); break;
     case 'tgame': startTri(m); break;
-    case 'tmove': if (TG && m.id === TG.id) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); tRunPre(); } break;
+    case 'tmove': if (TG && m.id === TG.id) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); } break;
     case 'tover': tEnd(m); break;
   }
 }
@@ -995,16 +1002,22 @@ function tApply(e, live) {
   if (Array.isArray(e)) {
     const m = T.find(st, e); if (!m) return;
     const pc = st.b[m.fr][m.fc], cap = st.b[m.tr][m.tc], who = +pc[0];
-    TG.log.push({ p: who, txt: `${sqn(m.fr, m.fc)} → ${sqn(m.tr, m.tc)}${cap ? ' ✕' : ''}${m.pr ? ' =' + String(m.pr).toUpperCase() : ''}` });
+    TG.log.push({ p: who, txt: `${sqn(m.fr, m.fc)} → ${sqn(m.tr, m.tc)}${cap ? ' ✕' : ''}` });
     TG.last = m; if (live) TG.anim = m; st = T.apply(st, m);
   } else { st = T.elim(st, e.e, e.r); TG.last = null; }
   TG.mv.push(e); TG.st = st; TG.sel = null;
   for (const x of st.ev) { TG.log.push({ p: x.p, txt: `☠ ${TNAME[x.p]} out – ${x.why}` }); if (live) toast(`${TNAME[x.p]} (${TG.pl[x.p].u}) is out: ${x.why}`); }
   TG.legal = !T.over(st) && st.turn === TG.idx ? T.legal(st) : [];
+  // run a queued premove if it is our turn now
+  if (live && TG.pre && st.turn === TG.idx && !T.over(st)) {
+    const q = TG.pre; TG.pre = null;
+    const pm = TG.legal.find(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc);
+    if (pm) setTimeout(() => { if (TG && !TG.over && TG.st.turn === TG.idx) tSendMove(pm); }, 0);
+  }
 }
 function tRender() {
   const st = TG.st, seat = TG.idx, [R, Cn] = tDims(seat), bd = $('tboard');
-  const tgt = TG.sel ? (TG.st.turn === TG.idx ? TG.legal : tMoveListForUs()).filter(m => m.fr === TG.sel[0] && m.fc === TG.sel[1]) : [];
+  const tgt = TG.sel ? TG.legal.filter(m => m.fr === TG.sel[0] && m.fc === TG.sel[1]) : [];
   const chk = new Set(); for (let p = 0; p < 3; p++) if (st.alive[p] && T.inCheck(st, p)) chk.add(T.kingPos(st.b, p).join());
   let h = '';
   for (let i = 0; i < R; i++) for (let j = 0; j < Cn; j++) {
@@ -1050,9 +1063,14 @@ function tRender() {
   }
   const wide = innerWidth >= 1000; $('tri').classList.toggle('wide', wide);
   const pill = (p, v, sd='bottom') => {
-    const uname = String(TG.pl[p].u || 'Player'), safeName = uname.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const uname = String(TG.pl[p].u || 'Player');
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const safeName = esc(uname);
+    // SAME LENGTH for every player: max 9 chars, longer names get cut with …
+    const shortName = esc(uname.length > 9 ? uname.slice(0, 8) + '…' : uname);
     const rating = Number(TG.pl[p].r); const shortRating = Number.isFinite(rating) ? (rating >= 1000 ? (rating/1000).toFixed(rating>=10000?0:1).replace(/\.0$/,'')+'k' : String(rating)) : String(TG.pl[p].r || '');
-    return `<div class="tp3 ${v ? 'v ' : ''}${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}" title="${safeName} · ${TG.pl[p].r} rating"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${safeName}">${safeName}${p === TG.idx ? ' (you)' : ''}</span><small>${TNAME[p]} · ${shortRating}</small></div><span class="tadv" id="ta${p}"></span><div class="tk" id="tk${p}">--:--</div></div>`;
+    const orient = sd === 'top' ? 'orient-top' : sd === 'left' ? 'orient-left' : sd === 'right' ? 'orient-right' : '';
+    return `<div class="tp3 ${v ? 'v ' : ''}${orient} ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}" title="${safeName} · ${TG.pl[p].r} rating"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${safeName}">${shortName}</span><small>${TNAME[p]} · ${shortRating}${p === TG.idx ? ' · sen' : ''}</small></div><span class="tadv" id="ta${p}"></span><div class="tk" id="tk${p}">--:--</div></div>`;
   };
   const box = { top: '', bottom: '', left: '', right: '' };
   if (wide) for (let p = 0; p < 3; p++) { const sd = tSide(seat, p); box[sd] += pill(p, sd === 'left' || sd === 'right', sd); }
@@ -1082,7 +1100,7 @@ function tClocks() {
     e.textContent = TG.st.alive[p] ? fmt(t) : '☠'; e.classList.toggle('low', run && t < 20000);
   }
 }
-/* 3-player input: pointer-based drag/drop, click-to-move, promotion, premoves and right-click arrows */
+/* 3-player input: pointer-based drag/drop, click-to-move, premoves and right-click arrows */
 let trcs = null, tDragFrom = null, tSuppressClick = false, tPointerId = null;
 function tSquare(e){
   let el = e && e.target && e.target.closest ? e.target.closest('.tq') : null;
@@ -1094,16 +1112,7 @@ function tSquare(e){
   }
   return null;
 }
-function tSendMove(m){ if(!TG || TG.over) return; send({t:'tmove',m:T.wire(m)}); TG.sel=null; TG.pre=null; $('modal').classList.add('hide'); tRender(); }
-// pawn reached the last rank: let the player choose the new piece
-function tPromo(ms){
-  const order = ['q','r','b','n'], opts = order.map(q => ms.find(m => String(m.pr) === q)).filter(Boolean);
-  const list = opts.length ? opts : ms;
-  $('mc').innerHTML = `<h2>Promote pawn</h2><div class="promo">` + list.map(m => { const q = String(m.pr || 'q'); return `<img data-q="${q}" alt="${q}" src="${TIMG[TG.idx][q] || PIECES + 'w' + q + '.png'}">`; }).join('') + `</div><button class="btn" id="tpc">Cancel</button>`;
-  $('mc').querySelectorAll('.promo img').forEach((im, i) => im.onclick = () => tSendMove(list[i]));
-  $('tpc').onclick = () => { $('modal').classList.add('hide'); TG.sel = null; tRender(); };
-  $('modal').classList.remove('hide');
-}
+function tSendMove(m){ if(!TG || TG.over) return; send({t:'tmove',m:T.wire(m)}); TG.sel=null; TG.pre=null; tRender(); }
 function tMoveListForUs(){
   if(!TG) return [];
   if(TG.st.turn===TG.idx) return TG.legal || T.legal(TG.st);
@@ -1114,14 +1123,12 @@ function tAttempt(r,c){
   const p=TG.st.b[r][c], ownTurn=TG.st.turn===TG.idx;
   if(ownTurn){
     if(TG.sel){
-      const ms=(TG.legal||T.legal(TG.st)).filter(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
-      if(ms.length===1){tSendMove(ms[0]);return;}
-      if(ms.length>1){tPromo(ms);return;}
+      const m=(TG.legal||T.legal(TG.st)).find(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
+      if(m){tSendMove(m);return;}
       if(TG.sel[0]===r&&TG.sel[1]===c){TG.sel=null;tRender();return;}
     }
     TG.pre=null; TG.sel=(p && +p[0]===TG.idx)?[r,c]:null; tRender(); return;
   }
-  if(!TG.st.alive[TG.idx]) return;
   if(TG.sel){
     if(TG.sel[0]===r&&TG.sel[1]===c){TG.sel=null;TG.pre=null;tRender();return;}
     const candidates=tMoveListForUs();
@@ -1132,28 +1139,21 @@ function tAttempt(r,c){
   }
   TG.sel=(p && +p[0]===TG.idx)?[r,c]:null; TG.pre=null; tRender();
 }
-// run the queued premove as soon as it is our turn (always promotes to a queen)
-function tRunPre(){
-  if(!TG || !TG.pre || TG.over || TG.st.turn!==TG.idx) return;
-  const q=TG.pre; TG.pre=null;
-  const ms=(TG.legal||[]).filter(x=>x.fr===q.fr&&x.fc===q.fc&&x.tr===q.tr&&x.tc===q.tc);
-  const m=ms.find(x=>String(x.pr)==='q')||ms[0];
-  if(m) tSendMove(m); else tRender();
-}
 $('tboard').addEventListener('click', e=>{
   if(tSuppressClick){tSuppressClick=false;return;}
   const el=tSquare(e); if(!el || !TG || TG.over) return;
-  if((TG.arrows&&TG.arrows.length) || (TG.hls&&TG.hls.length)){TG.arrows=[];TG.hls=[];}
+  if((TG.arrows&&TG.arrows.length) || (TG.hls&&TG.hls.length)){TG.arrows=[];TG.hls=[];tRender();}
   tAttempt(+el.dataset.r,+el.dataset.c);
 });
-$('tboard').addEventListener('contextmenu',e=>{e.preventDefault();});
+$('tboard').addEventListener('contextmenu',e=>{if(e.target.closest('.tq'))e.preventDefault();});
 $('tboard').addEventListener('pointerdown',e=>{
   if(!TG || TG.over) return;
   const el=tSquare(e);
   if(e.button===2){e.preventDefault();trcs=el?[+el.dataset.r,+el.dataset.c]:null;return;}
   if(e.button===0 && el){
     const r=+el.dataset.r,c=+el.dataset.c,p=TG.st.b[r][c];
-    if(p && +p[0]===TG.idx){tDragFrom=[r,c];tPointerId=e.pointerId;}
+    // drag only starts from one of our own pieces
+    if(p && +p[0]===TG.idx){tDragFrom=[r,c];tPointerId=e.pointerId;try{$('tboard').setPointerCapture(e.pointerId);}catch{} }
   }
 });
 $('tboard').addEventListener('pointerup',e=>{
