@@ -323,6 +323,25 @@ input:focus,select:focus{border-color:var(--g)}
   #tri .tp3 .nm{width:auto;min-width:0;max-width:none;flex:1 1 0}
   #tri .tp3 .uname,#tri .tp3 .nm small{max-width:100%}
 }
+
+/* ===== 3P v3: smaller equal cards, no rotation, 2P-style move list ===== */
+#tri .tp3.orient-top,#tri .tp3.orient-left,#tri .tp3.orient-right{transform:none!important}
+#tri .tp3,#tri .tp3.v{width:170px;min-width:170px;max-width:170px;height:48px;min-height:48px;flex:none}
+#tri .tp3 .nm{width:68px;min-width:68px;max-width:68px;flex:none}
+#tri .tp3 .uname,#tri .tp3 .nm small{max-width:68px}
+#tri .tp3 .tk{width:52px;min-width:52px;font-size:13px}
+#tri .vs{width:170px;max-width:170px}
+#tri #tmoves{display:grid;grid-template-columns:30px 1fr 1fr 1fr;align-content:start;padding:8px 6px;font-size:14px}
+#tri #tmoves span{padding:4px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tri #tmoves .n{color:var(--t)}
+#tri #tmoves .cur{background:#454240;font-weight:700}
+#tri #tmoves .elim{grid-column:1/-1;padding:4px 8px;color:#ff9b9b;font-size:13px}
+#tri #tmoves i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+@media(max-width:999px){
+  #tri .tp3,#tri .tp3.v{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .nm{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .uname,#tri .tp3 .nm small{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -1002,16 +1021,16 @@ function tApply(e, live) {
   if (Array.isArray(e)) {
     const m = T.find(st, e); if (!m) return;
     const pc = st.b[m.fr][m.fc], cap = st.b[m.tr][m.tc], who = +pc[0];
-    TG.log.push({ p: who, txt: `${sqn(m.fr, m.fc)} → ${sqn(m.tr, m.tc)}${cap ? ' ✕' : ''}` });
+    TG.log.push({ p: who, txt: `${sqn(m.fr, m.fc)}${cap ? 'x' : '-'}${sqn(m.tr, m.tc)}${m.pr ? '=' + String(m.pr).toUpperCase() : ''}` });
     TG.last = m; if (live) TG.anim = m; st = T.apply(st, m);
   } else { st = T.elim(st, e.e, e.r); TG.last = null; }
   TG.mv.push(e); TG.st = st; TG.sel = null;
-  for (const x of st.ev) { TG.log.push({ p: x.p, txt: `☠ ${TNAME[x.p]} out – ${x.why}` }); if (live) toast(`${TNAME[x.p]} (${TG.pl[x.p].u}) is out: ${x.why}`); }
+  for (const x of st.ev) { TG.log.push({ p: x.p, e: true, txt: `☠ ${TNAME[x.p]} out – ${x.why}` }); if (live) toast(`${TNAME[x.p]} (${TG.pl[x.p].u}) is out: ${x.why}`); }
   TG.legal = !T.over(st) && st.turn === TG.idx ? T.legal(st) : [];
   // run a queued premove if it is our turn now
   if (live && TG.pre && st.turn === TG.idx && !T.over(st)) {
     const q = TG.pre; TG.pre = null;
-    const pm = TG.legal.find(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc);
+    const pms = TG.legal.filter(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc), pm = pms.find(x => String(x.pr || '').toLowerCase() === 'q') || pms[0];
     if (pm) setTimeout(() => { if (TG && !TG.over && TG.st.turn === TG.idx) tSendMove(pm); }, 0);
   }
 }
@@ -1066,8 +1085,8 @@ function tRender() {
     const uname = String(TG.pl[p].u || 'Player');
     const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const safeName = esc(uname);
-    // SAME LENGTH for every player: max 9 chars, longer names get cut with …
-    const shortName = esc(uname.length > 9 ? uname.slice(0, 8) + '…' : uname);
+    // SAME LENGTH for every player: max 7 chars, longer names get cut with …
+    const shortName = esc(uname.length > 7 ? uname.slice(0, 6) + '…' : uname);
     const rating = Number(TG.pl[p].r); const shortRating = Number.isFinite(rating) ? (rating >= 1000 ? (rating/1000).toFixed(rating>=10000?0:1).replace(/\.0$/,'')+'k' : String(rating)) : String(TG.pl[p].r || '');
     const orient = sd === 'top' ? 'orient-top' : sd === 'left' ? 'orient-left' : sd === 'right' ? 'orient-right' : '';
     return `<div class="tp3 ${v ? 'v ' : ''}${orient} ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}" title="${safeName} · ${TG.pl[p].r} rating"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${safeName}">${shortName}</span><small>${TNAME[p]} · ${shortRating}${p === TG.idx ? ' · sen' : ''}</small></div><span class="tadv" id="ta${p}"></span><div class="tk" id="tk${p}">--:--</div></div>`;
@@ -1078,7 +1097,7 @@ function tRender() {
   $('ptop').innerHTML = box.top; $('pbot').innerHTML = box.bottom; $('pleft').innerHTML = box.left; $('pright').innerHTML = box.right;
   $('pbot').classList.toggle('row', !wide);
   [0, 1, 2].forEach(p => setAv($('tav' + p), TG.pl[p].a, TG.pl[p].pic));
-  $('tmoves').innerHTML = TG.log.map(l => `<div class="tlog"><b style="background:${TCOL[l.p]}"></b>${l.txt}</div>`).join(''); $('tmoves').scrollTop = 1e6;
+  $('tmoves').innerHTML = tMovesHTML(); $('tmoves').scrollTop = 1e6;
   updateMaterial3(st);
   const out = !st.alive[TG.idx];
   if (!TG.over) {
@@ -1091,6 +1110,17 @@ function tRender() {
   }
   $('tres').textContent = TG.over || out ? '🏠 Lobby' : '⚑ Resign';
   tClocks();
+}
+function tMovesHTML() {
+  let o = '', cnt = 0, row = 0, lastMv = -1;
+  TG.log.forEach((l, i) => { if (!l.e) lastMv = i; });
+  const pad = () => { while (cnt % 3) { o += '<span></span>'; cnt++; } };
+  TG.log.forEach((l, i) => {
+    if (l.e) { pad(); o += `<div class="elim">${l.txt}</div>`; return; }
+    if (cnt % 3 === 0) { row++; o += `<span class="n">${row}.</span>`; }
+    o += `<span class="${i === lastMv ? 'cur' : ''}"><i style="background:${TCOL[l.p]}"></i>${l.txt}</span>`; cnt++;
+  });
+  return o;
 }
 function tClocks() {
   if (!TG) return;
@@ -1113,6 +1143,16 @@ function tSquare(e){
   return null;
 }
 function tSendMove(m){ if(!TG || TG.over) return; send({t:'tmove',m:T.wire(m)}); TG.sel=null; TG.pre=null; tRender(); }
+const tpq = x => String(x.pr || '').toLowerCase();
+function tTry(ms){ if (ms.length > 1 && ms.some(x => x.pr)) tPromo(ms); else tSendMove(ms[0]); }
+function tPromo(ms){
+  const seat = TG.idx, names = { q: 'Queen', r: 'Rook', b: 'Bishop', n: 'Knight' };
+  const opts = 'qrbn'.split('').filter(q => ms.some(x => tpq(x) === q));
+  $('mc').innerHTML = '<h2>Promote pawn</h2><div class="promo">' + opts.map(q => `<img data-q="${q}" title="${names[q]}" src="${(TIMG[seat] && TIMG[seat][q]) || PIECES + 'w' + q + '.png'}">`).join('') + '</div><button class="btn" id="pcx">Cancel</button>';
+  $('mc').querySelectorAll('.promo img').forEach(im => im.onclick = () => { $('modal').classList.add('hide'); const m = ms.find(x => tpq(x) === im.dataset.q); if (m) tSendMove(m); });
+  $('pcx').onclick = () => { $('modal').classList.add('hide'); TG.sel = null; tRender(); };
+  $('modal').classList.remove('hide');
+}
 function tMoveListForUs(){
   if(!TG) return [];
   if(TG.st.turn===TG.idx) return TG.legal || T.legal(TG.st);
@@ -1123,8 +1163,8 @@ function tAttempt(r,c){
   const p=TG.st.b[r][c], ownTurn=TG.st.turn===TG.idx;
   if(ownTurn){
     if(TG.sel){
-      const m=(TG.legal||T.legal(TG.st)).find(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
-      if(m){tSendMove(m);return;}
+      const ms=(TG.legal||T.legal(TG.st)).filter(x=>x.fr===TG.sel[0]&&x.fc===TG.sel[1]&&x.tr===r&&x.tc===c);
+      if(ms.length){tTry(ms);return;}
       if(TG.sel[0]===r&&TG.sel[1]===c){TG.sel=null;tRender();return;}
     }
     TG.pre=null; TG.sel=(p && +p[0]===TG.idx)?[r,c]:null; tRender(); return;
