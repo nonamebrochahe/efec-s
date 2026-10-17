@@ -342,6 +342,23 @@ input:focus,select:focus{border-color:var(--g)}
   #tri .tp3 .nm{width:auto;min-width:0;max-width:none;flex:1 1 0}
   #tri .tp3 .uname,#tri .tp3 .nm small{max-width:100%}
 }
+
+/* ===== 3P v4: longer, centered cards ===== */
+#tri .tp3,#tri .tp3.v{width:210px;min-width:210px;max-width:210px;height:50px;min-height:50px;justify-content:center;gap:8px}
+#tri .tp3 .nm{width:104px;min-width:104px;max-width:104px;align-items:center;text-align:center}
+#tri .tp3 .uname,#tri .tp3 .nm small{max-width:104px;text-align:center}
+#tri .tp3 .uname{font-size:13px}
+#tri .tp3 .tk{width:56px;min-width:56px}
+#tri .vs{width:210px;max-width:210px;align-items:center}
+#tri .tside,#tri .tmid{justify-content:center;align-items:center}
+#tri .bcol{display:flex;flex-direction:column;align-items:center}
+#tri.wide{--s:min(calc(100vw - 740px),calc(100dvh - 170px),720px)}
+@media(max-width:1200px) and (min-width:1000px){#tri.wide{--s:min(calc(100vw - 690px),calc(100dvh - 190px),600px)}}
+@media(max-width:999px){
+  #tri .tp3,#tri .tp3.v{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .nm{width:auto;min-width:0;max-width:none;flex:1 1 0}
+  #tri .tp3 .uname,#tri .tp3 .nm small{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -1085,8 +1102,8 @@ function tRender() {
     const uname = String(TG.pl[p].u || 'Player');
     const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const safeName = esc(uname);
-    // SAME LENGTH for every player: max 7 chars, longer names get cut with …
-    const shortName = esc(uname.length > 7 ? uname.slice(0, 6) + '…' : uname);
+    // SAME LENGTH for every player: max 10 chars, longer names get cut with …
+    const shortName = esc(uname.length > 10 ? uname.slice(0, 9) + '…' : uname);
     const rating = Number(TG.pl[p].r); const shortRating = Number.isFinite(rating) ? (rating >= 1000 ? (rating/1000).toFixed(rating>=10000?0:1).replace(/\.0$/,'')+'k' : String(rating)) : String(TG.pl[p].r || '');
     const orient = sd === 'top' ? 'orient-top' : sd === 'left' ? 'orient-left' : sd === 'right' ? 'orient-right' : '';
     return `<div class="tp3 ${v ? 'v ' : ''}${orient} ${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}" title="${safeName} · ${TG.pl[p].r} rating"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${safeName}">${shortName}</span><small>${TNAME[p]} · ${shortRating}${p === TG.idx ? ' · sen' : ''}</small></div><span class="tadv" id="ta${p}"></span><div class="tk" id="tk${p}">--:--</div></div>`;
