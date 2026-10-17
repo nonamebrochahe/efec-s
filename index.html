@@ -108,7 +108,23 @@ input:focus,select:focus{border-color:var(--g)}
 /* modal */
 #modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:20}
 #modal .card{max-width:340px;text-align:center;align-items:stretch}
+#bw{position:relative;width:var(--s);height:var(--s)}
+#ar{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6}
 .sq.pre{box-shadow:inset 0 0 0 100px #e0453f88}
+.sq.hl-g{box-shadow:inset 0 0 0 100px #81b64caa}.sq.hl-r{box-shadow:inset 0 0 0 100px #eb4034aa}
+.sq.hl-y{box-shadow:inset 0 0 0 100px #f2c94caa}.sq.hl-b{box-shadow:inset 0 0 0 100px #3a8ee6aa}
+.bdg{position:absolute;top:-3%;right:-3%;width:36%;height:36%;border-radius:50%;z-index:5;display:grid;place-items:center;font:800 clamp(8px,1.9vw,15px) sans-serif;color:#fff;box-shadow:0 2px 5px #000a;pointer-events:none}
+#evb{position:relative;height:16px;background:#3a3734;border-radius:8px;overflow:hidden;margin:4px 0}
+#evw{height:100%;background:#f1f1f1;width:50%;transition:width .35s}
+#evt{position:absolute;right:8px;top:0;font:700 11px/16px sans-serif;color:#fff;mix-blend-mode:difference}
+.stat .sub{font-size:13px;font-weight:600;color:var(--t);margin-top:2px}
+.rm{cursor:pointer}.rm:hover{background:#3a3734}
+.acc{display:flex;gap:8px;padding:8px 10px 6px}.acc div{flex:1;background:#272522;border-radius:8px;padding:6px;text-align:center}
+.acc small{color:var(--t)}.acc b{display:block;font-size:20px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 4px;font-size:12px}
+.chips span{display:inline-flex;align-items:center;gap:4px;background:#272522;border-radius:12px;padding:2px 8px 2px 2px}
+.chips i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff}
+.hint{padding:0 10px 6px;font-size:11px;color:var(--t)}
 #modal h2{font-size:26px}
 #modal .card{max-width:400px;max-height:92vh;overflow:auto}
 .tc{display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -167,13 +183,16 @@ input:focus,select:focus{border-color:var(--g)}
 <div id="game" class="screen hide"><div class="gwrap">
   <div class="bcol">
     <div class="bar"><div class="who"><div class="av" id="avt"></div><div id="nt"></div></div><div class="clock" id="ct">--:--</div></div>
-    <div id="board"></div>
+    <div id="evb" class="hide"><div id="evw"></div><span id="evt"></span></div>
+    <div id="bw"><div id="board"></div><svg id="ar" viewBox="0 0 800 800"></svg></div>
     <div class="bar"><div class="who"><div class="av" id="avb"></div><div id="nb"></div></div><div class="clock" id="cb">--:--</div></div>
   </div>
   <div class="side">
     <div class="stat" id="stat"></div>
+    <div id="rsum" class="hide"></div>
     <div id="moves"></div>
-    <div class="acts"><button class="btn" id="bd">½ Draw</button><button class="btn red" id="br">⚑ Resign</button></div>
+    <div class="acts" id="gacts"><button class="btn" id="bd">½ Draw</button><button class="btn red" id="br">⚑ Resign</button></div>
+    <div class="acts hide" id="rnav"><button class="btn" id="rf" title="Start">⏮</button><button class="btn" id="rb" title="Back (←)">◀</button><button class="btn" id="rn" title="Next (→)">▶</button><button class="btn" id="rl" title="End">⏭</button><button class="btn red" id="rx" title="Close review">✕</button></div>
   </div>
 </div></div>
 
@@ -283,7 +302,7 @@ $('bx').onclick = () => { send({ t: 'cancel' }); setWait(false); };
 /* ---------- game ---------- */
 function applyWire(w) {
   const m = C.find(G.st, w); if (!m) return;
-  G.san.push(C.san(G.st, m)); G.st = C.apply(G.st, m); G.last = m; G.sel = null; G.legal = C.legal(G.st);
+  G.san.push(C.san(G.st, m)); G.st = C.apply(G.st, m); G.last = m; G.sel = null; G.arrows = []; G.hls = []; (G.mv || (G.mv = [])).push(w); G.legal = C.legal(G.st);
   if (G.live) { G.anim = [m]; if (m.ca) G.anim.push({ fr: m.fr, fc: m.ca === 'K' ? 7 : 0, tr: m.tr, tc: m.ca === 'K' ? 5 : 3 }); }
 }
 function startGame(m) {
@@ -300,15 +319,16 @@ function endGame(m) {
   const title = r === '1/2-1/2' ? 'Draw' : r === mine ? 'You Won! 🏆' : 'You Lost';
   const old = me.rating; me.rating = m.ratings[G.color]; profile();
   const d = me.rating - old;
-  $('mc').innerHTML = `<h2>${title}</h2><div style="color:var(--t)">by ${m.reason}</div>${G.bot ? '' : `<div style="font-size:18px">Rating ${me.rating} <b style="color:${d >= 0 ? 'var(--g)' : '#ff6b6b'}">(${d >= 0 ? '+' : ''}${d})</b></div>`}<button class="btn big" id="mb">Back to lobby</button>${G.bot ? '<button class="btn" id="mr">Play again</button>' : ''}<button class="btn" id="mv">View board</button>`;
+  $('mc').innerHTML = `<h2>${title}</h2><div style="color:var(--t)">by ${m.reason}</div>${G.bot ? '' : `<div style="font-size:18px">Rating ${me.rating} <b style="color:${d >= 0 ? 'var(--g)' : '#ff6b6b'}">(${d >= 0 ? '+' : ''}${d})</b></div>`}<button class="btn big" id="mb">Back to lobby</button>${G.bot ? '<button class="btn" id="mr">Play again</button>' : ''}<button class="btn" id="mrv">📊 Game Review</button><button class="btn" id="mv">View board</button>`;
   $('modal').classList.remove('hide');
   $('mb').onclick = () => { $('modal').classList.add('hide'); G = null; show('lobby'); };
+  $('mrv').onclick = () => { $('modal').classList.add('hide'); startReview(); };
   if ($('mr')) $('mr').onclick = () => startBot(G.lv, G.color === 'w' ? 'b' : 'w');
-  $('mv').onclick = () => { $('modal').classList.add('hide'); $('stat').innerHTML = 'Game over <button class="btn" id="mb2" style="padding:4px 10px;margin-left:8px">Lobby</button>'; $('mb2').onclick = $('mb').onclick; };
+  $('mv').onclick = () => { $('modal').classList.add('hide'); overStat(); };
   render();
 }
 function render() {
-  const s = G.st, flip = G.color === 'b', top = flip ? 'w' : 'b', bot = G.color;
+  const s = G.rv ? G.rv.st : G.st, flip = G.color === 'b', top = flip ? 'w' : 'b', bot = G.color;
   const P = c => G[c], nm = c => `${P(c).u} <small>(${P(c).r})</small>`;
   $('nt').innerHTML = nm(top); $('nb').innerHTML = nm(bot); setAv($('avt'), P(top).a, P(top).pic, P(top).emoji); setAv($('avb'), P(bot).a, P(bot).pic, P(bot).emoji);
   const kp = C.inCheck(s) ? C.kingPos(s.b, s.turn) : null;
@@ -317,13 +337,14 @@ function render() {
   for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
     const r = flip ? 7 - i : i, c = flip ? 7 - j : j, p = s.b[r][c];
     let cl = 'sq ' + ((r + c) % 2 ? 'd' : 'l');
-    if (G.last && ((G.last.fr === r && G.last.fc === c) || (G.last.tr === r && G.last.tc === c))) cl += ' last';
+    { const LM = G.rv ? G.rv.last : G.last; if (LM && ((LM.fr === r && LM.fc === c) || (LM.tr === r && LM.tc === c))) cl += ' last'; }
     if (G.sel && G.sel[0] === r && G.sel[1] === c) cl += ' sel';
     if (G.pre && ((G.pre.fr === r && G.pre.fc === c) || (G.pre.tr === r && G.pre.tc === c))) cl += ' pre';
-    if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate ? ' mate' : '');
+    { const hl = (G.hls || []).find(h => h.r === r && h.c === c); if (hl) cl += ' hl-' + hl.col; }
+    if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate && (!G.rv || G.rv.i === G.rv.n) ? ' mate' : '');
     const t = tgt.some(m => m.tr === r && m.tc === c);
     h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
-      (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
+      (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (G.rv && G.rv.cur && G.rv.cur.tr === r && G.rv.cur.tc === c ? `<span class="bdg" style="background:${CL[G.rv.cur.cls].c}">${CL[G.rv.cur.cls].s}</span>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
   }
   $('board').innerHTML = h;
   $('board').classList.toggle('enter', !!G.intro); G.intro = false;
@@ -341,6 +362,7 @@ function render() {
   let mh = '';
   G.san.forEach((x, i) => { if (i % 2 === 0) mh += `<span class="n">${i / 2 + 1}.</span>`; mh += `<span class="${i === G.san.length - 1 ? 'cur' : ''}">${x}</span>`; });
   $('moves').innerHTML = mh; $('moves').scrollTop = 1e6;
+  drawArrows(flip); syncReviewUI(); if (G.rv) rvPanel();
   if (!G.over) $('stat').textContent = s.turn === G.color ? (kp ? 'Your move – you are in check!' : 'Your move') : (kp ? "Check! Opponent's move" : "Opponent's move");
   $('stat').classList.toggle('chkt', !!kp && !G.over);
   clocks();
@@ -375,6 +397,7 @@ function promo(ms) {
   $('board').appendChild(o);
 }
 $('board').addEventListener('click', e => {
+  if (G && ((G.arrows || []).length || (G.hls || []).length)) { G.arrows = []; G.hls = []; render(); }
   if (!G || G.over) return;
   const el = e.target.closest('.sq'); if (!el) return;
   const r = +el.dataset.r, c = +el.dataset.c, p = G.st.b[r][c];
@@ -414,7 +437,7 @@ function runPre() {
   const m = G.legal.find(x => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc && (!x.pr || x.pr === 'q'));
   if (m) doMove(m); else render();
 }
-$('board').addEventListener('contextmenu', e => { e.preventDefault(); if (G && (G.pre || G.sel)) { G.pre = null; G.sel = null; render(); } });
+$('board').addEventListener('contextmenu', e => e.preventDefault());
 $('br').onclick = () => { if (!G || G.over || !confirm('Resign this game?')) return; if (G.bot) endGame({ result: G.color === 'w' ? '0-1' : '1-0', reason: 'resignation', ratings: { w: me.rating, b: me.rating } }); else send({ t: 'resign' }); };
 $('bd').onclick = () => { if (!G || G.over) return; if (!G.bot) return send({ t: 'draw' }); const bv = (G.color === 'w' ? -1 : 1) * evalS(G.st); if (bv < -150) endGame({ result: '1/2-1/2', reason: 'agreement', ratings: { w: me.rating, b: me.rating } }); else toast('The bot declined your draw offer'); };
 
@@ -465,7 +488,7 @@ function evalS(s) {
   }
   return v;
 }
-let DL = 0, ABORT = false;
+let DL = 0, ABORT = false, lastScore = 0, lastGap = 0;
 function order(L, s) {
   const sc = m => (m.cap ? 10 * (PV[(s.b[m.tr][m.tc] || 'wp')[1]]) - PV[s.b[m.fr][m.fc][1]] / 10 : 0) + (m.pr === 'q' ? 800 : 0);
   L.sort((a, b) => sc(b) - sc(a));
@@ -486,18 +509,162 @@ function search(s, maxD, tl, noisy) {
   DL = tl ? Date.now() + tl : Infinity; ABORT = false;
   const L = C.legal(s); order(L, s); let best = L[0];
   for (let d = 1; d <= maxD; d++) {
-    let bm = null, ba = -Infinity;
+    let bm = null, ba = -Infinity, sc2 = -Infinity;
     for (const m of L) {
       let v = -negamax(C.apply(s, m), d - 1, -Infinity, -ba, 1); if (ABORT) break;
       if (noisy) v += (Math.random() - .5) * 30;
-      if (v > ba) { ba = v; bm = m; }
+      if (v > ba) { sc2 = ba; ba = v; bm = m; } else if (v > sc2) sc2 = v;
     }
     if (ABORT || !bm) break;
-    best = bm; L.splice(L.indexOf(bm), 1); L.unshift(bm);
+    best = bm; lastScore = ba; lastGap = sc2 === -Infinity ? 0 : ba - sc2; L.splice(L.indexOf(bm), 1); L.unshift(bm);
     if (ba > 90000) break;
   }
   return best;
 }
+
+/* ---------- right-click arrows & highlights ---------- */
+const ACOL = { g: '#81b64c', r: '#eb4034', y: '#f2c94c', b: '#3a8ee6' };
+let rcs = null;
+$('board').addEventListener('mousedown', e => { if (e.button !== 2 || !G) return; const el = e.target.closest('.sq'); rcs = el ? [+el.dataset.r, +el.dataset.c] : null; });
+$('board').addEventListener('mouseup', e => {
+  if (e.button !== 2 || !G || !rcs) return;
+  const el = e.target.closest('.sq'); if (!el) { rcs = null; return; }
+  const r = +el.dataset.r, c = +el.dataset.c, col = e.shiftKey ? 'r' : e.ctrlKey ? 'y' : e.altKey ? 'b' : 'g';
+  G.arrows = G.arrows || []; G.hls = G.hls || [];
+  if (r === rcs[0] && c === rcs[1]) {
+    if (G.pre) { G.pre = null; G.sel = null; }
+    else { const i = G.hls.findIndex(h => h.r === r && h.c === c), old = i >= 0 ? G.hls.splice(i, 1)[0] : null; if (!old || old.col !== col) G.hls.push({ r, c, col }); }
+  } else {
+    const i = G.arrows.findIndex(a => a.fr === rcs[0] && a.fc === rcs[1] && a.tr === r && a.tc === c), old = i >= 0 ? G.arrows.splice(i, 1)[0] : null;
+    if (!old || old.col !== col) G.arrows.push({ fr: rcs[0], fc: rcs[1], tr: r, tc: c, col });
+  }
+  rcs = null; render();
+});
+function drawArrows(flip) {
+  const list = [...(G.arrows || [])];
+  if (G.rv && G.rv.barrow) list.unshift({ ...G.rv.barrow, col: 'g' });
+  const P = (r, c) => [(flip ? 7 - c : c) * 100 + 50, (flip ? 7 - r : r) * 100 + 50];
+  $('ar').innerHTML = list.map(a => {
+    const [x1, y1] = P(a.fr, a.fc), [x2, y2] = P(a.tr, a.tc), L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+    const hx = x2 - ux * 10, hy = y2 - uy * 10, bx = hx - ux * 38, by = hy - uy * 38, px = -uy * 30, py = ux * 30, k = ACOL[a.col];
+    return `<g fill="${k}" stroke="${k}" opacity=".85"><line x1="${x1 + ux * 22}" y1="${y1 + uy * 22}" x2="${bx}" y2="${by}" stroke-width="18" stroke-linecap="round"/><polygon stroke="none" points="${hx},${hy} ${bx + px},${by + py} ${bx - px},${by - py}"/></g>`;
+  }).join('');
+}
+
+/* ---------- GAME REVIEW ---------- */
+const CL = {
+  brilliant: { s: '!!', c: '#1baca6', t: 'a brilliant move' }, great: { s: '!', c: '#5c8bb0', t: 'a great move' },
+  best: { s: '★', c: '#81b64c', t: 'the best move' }, excellent: { s: '👍', c: '#96bc4b', t: 'an excellent move' },
+  good: { s: '✓', c: '#a3b99a', t: 'a good move' }, inaccuracy: { s: '?!', c: '#f7c631', t: 'an inaccuracy' },
+  mistake: { s: '?', c: '#e58f2a', t: 'a mistake' }, blunder: { s: '??', c: '#ca3431', t: 'a blunder' }, book: { s: '📖', c: '#a88865', t: 'a book move' }
+};
+/*R-START*/
+const wp = x => 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * Math.max(-1500, Math.min(1500, x)))) - 1);
+const matSide = s => { let v = 0; for (const row of s.b) for (const p of row) if (p) v += (p[0] === 'w' ? 1 : -1) * PV[p[1]]; return (s.turn === 'w' ? 1 : -1) * v; };
+function qMat(s, a, b, d) {
+  const st = matSide(s); if (d === 0 || st >= b) return st; if (st > a) a = st;
+  for (const m of C.legal(s)) { if (!m.cap) continue; const v = -qMat(C.apply(s, m), -b, -a, d - 1); if (v >= b) return v; if (v > a) a = v; }
+  return a;
+}
+function analyze(s) {
+  const L = C.legal(s);
+  if (!L.length) return { score: C.inCheck(s) ? -99999 : 0, best: null, gap: 0, n: 0 };
+  lastGap = 0; const best = search(s, 3, 2500, false);
+  return { score: lastScore, best, gap: lastGap, n: L.length };
+}
+function playedScore(s, m, a) {
+  if (a.best && a.best.fr === m.fr && a.best.fc === m.fc && a.best.tr === m.tr && a.best.tc === m.tc && (a.best.pr || '') === (m.pr || '')) return a.score;
+  DL = Infinity; ABORT = false; return -negamax(C.apply(s, m), 2, -Infinity, Infinity, 1);
+}
+function classify(states, mvs, an, pvs) {
+  const out = [], same = (a, m) => a && a.fr === m.fr && a.fc === m.fc && a.tr === m.tr && a.tc === m.tc && (a.pr || '') === (m.pr || '');
+  for (let k = 0; k < mvs.length; k++) {
+    const s = states[k], m = mvs[k], a = an[k], Ei = a.score;
+    const wpI = wp(Ei), wpJ = wp(pvs[k]), isBest = same(a.best, m), eff = isBest ? 0 : Math.max(0, wpI - wpJ);
+    let cls = isBest ? 'best' : eff < 3 ? 'excellent' : eff < 7 ? 'good' : eff < 14 ? 'inaccuracy' : eff < 25 ? 'mistake' : 'blunder';
+    if (isBest && a.n > 1 && wpI < 85 && wpI - wp(Ei - a.gap) >= 12) cls = 'great';
+    if (eff < 3 && s.b[m.fr][m.fc][1] !== 'k' && wpJ >= 45 && wpI < 90) {
+      const sac = matSide(s) - (-qMat(states[k + 1], -Infinity, Infinity, 6));
+      if (sac >= 250) cls = 'brilliant';
+    }
+    if (k < 10 && cls !== 'brilliant' && eff < 25 && !C.status(states[k + 1])) cls = 'book';
+    out.push({ cls, eff: cls === 'book' ? 0 : eff, acc: Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * (cls === 'book' ? 0 : eff)) - 3.1669)) });
+  }
+  return out;
+}
+/*R-END*/
+function overStat() {
+  $('stat').innerHTML = 'Game over <button class="btn" id="sr" style="padding:4px 10px;margin-left:6px">📊 Review</button> <button class="btn" id="sl" style="padding:4px 10px">Lobby</button>';
+  $('sr').onclick = startReview; $('sl').onclick = () => { $('modal').classList.add('hide'); G = null; show('lobby'); };
+}
+async function startReview() {
+  if (!G || !G.over) return;
+  const n = (G.mv || []).length; if (!n) return toast('No moves to review');
+  G.pre = null; G.sel = null; G.arrows = []; G.hls = [];
+  let s = C.init(); const states = [s], mvs = [], sans = [];
+  for (const w of G.mv) { const m = C.find(s, w); mvs.push(m); sans.push(C.san(s, m)); s = C.apply(s, m); states.push(s); }
+  const rv = G.rv = { states, mvs, sans, an: [], pv: [], cls: [], n, i: 0, st: states[0], last: null, cur: null, barrow: null, ready: false, prog: 0 };
+  render();
+  for (let k = 0; k <= n; k++) {
+    if (G.rv !== rv) return;
+    $('stat').textContent = `Analyzing… ${k}/${n + 1}`;
+    await new Promise(r => setTimeout(r, 20));
+    rv.an[k] = analyze(states[k]);
+    if (k < n) rv.pv[k] = playedScore(states[k], mvs[k], rv.an[k]);
+  }
+  if (G.rv !== rv) return;
+  rv.cls = classify(states, mvs, rv.an, rv.pv);
+  rv.ready = true; setRv(0);
+}
+function setRv(i) {
+  const rv = G.rv; if (!rv) return;
+  i = Math.max(0, Math.min(rv.n, i)); rv.i = i; rv.st = rv.states[i]; rv.last = i ? rv.mvs[i - 1] : null;
+  const c = rv.ready && i ? rv.cls[i - 1] : null;
+  rv.cur = c ? { tr: rv.last.tr, tc: rv.last.tc, cls: c.cls } : null;
+  const b = c && ['inaccuracy', 'mistake', 'blunder'].includes(c.cls) ? rv.an[i - 1].best : null;
+  rv.barrow = b ? { fr: b.fr, fc: b.fc, tr: b.tr, tc: b.tc } : null;
+  G.arrows = []; G.hls = []; render();
+}
+function closeReview() { G.rv = null; render(); overStat(); }
+function syncReviewUI() {
+  const rv = G.rv;
+  $('rnav').classList.toggle('hide', !rv); $('gacts').classList.toggle('hide', !!rv);
+  $('evb').classList.toggle('hide', !rv); $('rsum').classList.toggle('hide', !rv || !rv.ready);
+  if (rv && rv.an[rv.i]) {
+    const sc = rv.an[rv.i].score * (rv.st.turn === 'w' ? 1 : -1);
+    $('evw').style.width = wp(sc) + '%'; $('evt').textContent = Math.abs(sc) > 90000 ? 'M' : (sc > 0 ? '+' : '') + (sc / 100).toFixed(1);
+  }
+}
+function rvPanel() {
+  const rv = G.rv; let mh = '';
+  rv.sans.forEach((x, k) => {
+    if (k % 2 === 0) mh += `<span class="n">${k / 2 + 1}.</span>`;
+    const c = rv.ready ? rv.cls[k] : null;
+    mh += `<span class="rm ${k + 1 === rv.i ? 'cur' : ''}" data-i="${k + 1}">${x}${c ? ` <b style="color:${CL[c.cls].c}">${CL[c.cls].s}</b>` : ''}</span>`;
+  });
+  $('moves').innerHTML = mh;
+  $('moves').querySelectorAll('.rm').forEach(e => e.onclick = () => setRv(+e.dataset.i));
+  const cur = $('moves').querySelector('.cur'); if (cur) $('moves').scrollTop = cur.offsetTop - $('moves').clientHeight / 2;
+  if (!rv.ready) return;
+  if (rv.i === 0) $('stat').textContent = 'Starting position';
+  else {
+    const c = rv.cls[rv.i - 1], k = CL[c.cls], bad = ['inaccuracy', 'mistake', 'blunder'].includes(c.cls);
+    $('stat').innerHTML = `<span style="color:${k.c}">${rv.sans[rv.i - 1]} is ${k.t}</span>` + (bad && rv.an[rv.i - 1].best ? `<div class="sub">Best was ${C.san(rv.states[rv.i - 1], rv.an[rv.i - 1].best)}</div>` : '');
+  }
+  const acc = { w: [], b: [] }, cnt = {};
+  Object.keys(CL).forEach(k => cnt[k] = { w: 0, b: 0 });
+  rv.cls.forEach((c, k) => { const col = k % 2 ? 'b' : 'w'; acc[col].push(c.acc); cnt[c.cls][col]++; });
+  const av = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length * 10) / 10 : '–';
+  $('rsum').innerHTML = `<div class="acc"><div><small>White accuracy</small><b>${av(acc.w)}</b></div><div><small>Black accuracy</small><b>${av(acc.b)}</b></div></div><div class="chips">${Object.keys(CL).map(k => cnt[k].w + cnt[k].b ? `<span title="${k}"><i style="background:${CL[k].c}">${CL[k].s}</i>${cnt[k].w}·${cnt[k].b}</span>` : '').join('')}</div><div class="hint">Counts: White · Black — computer analysis, depth 3 (approximate)</div>`;
+}
+$('rf').onclick = () => setRv(0); $('rb').onclick = () => setRv(G.rv.i - 1);
+$('rn').onclick = () => setRv(G.rv.i + 1); $('rl').onclick = () => setRv(G.rv.n); $('rx').onclick = closeReview;
+document.addEventListener('keydown', e => {
+  if (!G || !G.rv) return;
+  if (e.key === 'ArrowLeft') setRv(G.rv.i - 1); else if (e.key === 'ArrowRight') setRv(G.rv.i + 1);
+  else if (e.key === 'Home') setRv(0); else if (e.key === 'End') setRv(G.rv.n); else return;
+  e.preventDefault();
+});
 
 connect();
 </script>
