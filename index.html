@@ -49,10 +49,10 @@ input:focus,select:focus{border-color:var(--g)}
 .who small{color:var(--t);font-weight:400}
 .clock{background:#262421;font:700 22px/1 ui-monospace,Consolas,monospace;padding:8px 12px;border-radius:6px;color:#aaa;min-width:88px;text-align:center}
 .clock.act{background:#fff;color:#222}.clock.low{background:#b33;color:#fff}
-#board{position:relative;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:var(--s);height:var(--s);aspect-ratio:1/1;flex:none;border-radius:6px;overflow:hidden;user-select:none;box-shadow:0 10px 36px #000a,0 0 0 4px #1d1b19}
+#board{position:relative;display:grid;touch-action:none;-webkit-user-select:none;user-select:none;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:var(--s);height:var(--s);aspect-ratio:1/1;flex:none;border-radius:6px;overflow:hidden;user-select:none;box-shadow:0 10px 36px #000a,0 0 0 4px #1d1b19}
 .sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0;min-height:0}
 .sq.l{background:var(--l)}.sq.d{background:var(--d)}
-.sq img{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain;cursor:grab;-webkit-user-drag:element;filter:drop-shadow(0 3px 2px #0007);transition:transform .15s,filter .15s}
+.sq img{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain;cursor:grab;-webkit-user-drag:none;user-select:none;-webkit-user-select:none;touch-action:none;pointer-events:none;filter:drop-shadow(0 3px 2px #0007);transition:transform .15s,filter .15s}
 .sq img:hover{transform:translateY(-4%) scale(1.07);filter:drop-shadow(0 9px 6px #0008)}
 .sq.last::before,.sq.sel::before{content:"";position:absolute;inset:0;background:#f5f55f88;z-index:1}
 .sq.sel::before{background:#ffff0077}
@@ -675,7 +675,7 @@ function render() {
     if (kp && kp[0] === r && kp[1] === c) cl += ' chk' + (G.mate && (!G.rv || G.rv.i === G.rv.n) ? ' mate' : '');
     const t = S.hints && tgt.some(m => m.tr === r && m.tc === c);
     h += `<div class="${cl}" data-r="${r}" data-c="${c}">` + (j === 0 ? `<i class="rk">${8 - r}</i>` : '') + (i === 7 ? `<i class="fl">${'abcdefgh'[c]}</i>` : '') +
-      (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (G.rv && G.rv.cur && G.rv.cur.tr === r && G.rv.cur.tc === c ? `<span class="bdg" style="background:${CL[G.rv.cur.cls].c}">${CL[G.rv.cur.cls].s}</span>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="${!G.over && p[0] === G.color}">` : '') + '</div>';
+      (t ? `<b class="${p ? 'ring' : 'dot'}"></b>` : '') + (G.rv && G.rv.cur && G.rv.cur.tr === r && G.rv.cur.tc === c ? `<span class="bdg" style="background:${CL[G.rv.cur.cls].c}">${CL[G.rv.cur.cls].s}</span>` : '') + (p ? `<img src="${PIECES}${p}.png" alt="${p}" style="--d:${i * 8 + j}" draggable="false">` : '') + '</div>';
   }
   $('board').innerHTML = h;
   $('board').classList.toggle('enter', !!G.intro); G.intro = false;
@@ -694,7 +694,7 @@ function render() {
   G.san.forEach((x, i) => { if (i % 2 === 0) mh += `<span class="n">${i / 2 + 1}.</span>`; mh += `<span class="${i === G.san.length - 1 ? 'cur' : ''}">${x}</span>`; });
   $('moves').innerHTML = mh; $('moves').scrollTop = 1e6;
   drawArrows(flip); syncReviewUI(); if (G.rv) rvPanel();
-  if (!G.over) $('stat').textContent = real.turn === G.color ? (kp ? 'Your move – you are in check!' : 'Your move') : (kp ? "Check! Opponent's move" : "Opponent's move");
+  if (!G.over) $('stat').textContent = real.turn === G.color ? (kp ? 'Your move – you are in check!' : 'Your move') : (kp ? "Check! Opponent's move · select a piece then destination to premove" : "Opponent's move · select a piece then destination to premove");
   $('stat').classList.toggle('chkt', !!kp && !G.over);
   clocks();
 }
@@ -736,20 +736,72 @@ $('board').addEventListener('click', e => {
   if (G.sel && tryTo(r, c)) return;
   G.sel = (p && p[0] === G.color && !(G.sel && G.sel[0] === r && G.sel[1] === c)) ? [r, c] : null; render();
 });
-$('board').addEventListener('dragstart', e => {
-  const el = e.target.closest('.sq');
-  if (!G || G.over || !el) return e.preventDefault();
-  const r = +el.dataset.r, c = +el.dataset.c;
-  const vp = (G.st.turn === G.color ? G.st : virt()).b[r][c]; if (!vp || vp[0] !== G.color) return e.preventDefault();
-  G.sel = [r, c]; e.dataTransfer.setData('text', 'x'); e.dataTransfer.effectAllowed = 'move';
+/* Direct piece dragging: no browser PNG drag ghost; supports mouse, pen and touch. */
+let drag2 = null, dragGhost2 = null, suppressBoardClick2 = false;
+function squareAtPoint2(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return el && el.closest ? el.closest('#board .sq') : null;
+}
+function clearDrag2() {
+  if (dragGhost2) dragGhost2.remove();
+  dragGhost2 = null; drag2 = null;
+}
+$('board').addEventListener('pointerdown', e => {
+  if (e.button !== 0 || !G || G.over || e.target.closest('.pm')) return;
+  const sq = e.target.closest('.sq'); if (!sq) return;
+  const r = +sq.dataset.r, c = +sq.dataset.c;
+  const boardState = G.st.turn === G.color ? G.st : virt();
+  const piece = boardState.b[r][c];
+  if (!piece || piece[0] !== G.color) return;
+  drag2 = { r, c, id: e.pointerId, x: e.clientX, y: e.clientY, started: false, piece };
+  try { $('board').setPointerCapture(e.pointerId); } catch {}
 });
-$('board').addEventListener('dragover', e => e.preventDefault());
-$('board').addEventListener('drop', e => {
-  e.preventDefault(); const el = e.target.closest('.sq');
-  if (!el || !G.sel) return;
-  if (G.st.turn !== G.color) return preClick(+el.dataset.r, +el.dataset.c);
-  if (!tryTo(+el.dataset.r, +el.dataset.c)) render();
+$('board').addEventListener('pointermove', e => {
+  if (!drag2 || drag2.id !== e.pointerId) return;
+  if (!drag2.started && Math.hypot(e.clientX - drag2.x, e.clientY - drag2.y) < 6) return;
+  if (!drag2.started) {
+    drag2.started = true;
+    const rect = $('board').getBoundingClientRect();
+    dragGhost2 = document.createElement('img');
+    dragGhost2.src = `${PIECES}${drag2.piece}.png`;
+    dragGhost2.alt = '';
+    Object.assign(dragGhost2.style, {
+      position:'fixed', left:'0', top:'0', width:`${rect.width/8}px`,
+      height:`${rect.height/8}px`, objectFit:'contain', zIndex:'1000',
+      pointerEvents:'none', margin:'0', transform:'translate(-50%,-50%)',
+      filter:'drop-shadow(0 8px 7px #0009)', willChange:'left,top'
+    });
+    document.body.appendChild(dragGhost2);
+    G.sel = [drag2.r, drag2.c]; render();
+  }
+  if (dragGhost2) {
+    dragGhost2.style.left = `${e.clientX}px`;
+    dragGhost2.style.top = `${e.clientY}px`;
+  }
+  e.preventDefault();
 });
+function finishDrag2(e) {
+  if (!drag2 || drag2.id !== e.pointerId) return;
+  const d = drag2, sq = squareAtPoint2(e.clientX, e.clientY);
+  clearDrag2();
+  if (!d.started || !sq) return;
+  suppressBoardClick2 = true;
+  setTimeout(() => { suppressBoardClick2 = false; }, 0);
+  const r = +sq.dataset.r, c = +sq.dataset.c;
+  if (G.st.turn !== G.color) { preClick(r, c); return; }
+  G.sel = [d.r, d.c];
+  if (!tryTo(r, c)) {
+    const piece = G.st.b[r][c];
+    G.sel = piece && piece[0] === G.color ? [r, c] : null;
+    render();
+  }
+}
+$('board').addEventListener('pointerup', finishDrag2);
+$('board').addEventListener('pointercancel', clearDrag2);
+$('board').addEventListener('click', e => {
+  if (suppressBoardClick2) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+$('board').addEventListener('dragstart', e => e.preventDefault());
 /* ---------- premove ---------- */
 const sameM = (x, q) => x.fr === q.fr && x.fc === q.fc && x.tr === q.tr && x.tc === q.tc && (!x.pr || x.pr === 'q');
 // board as it will look after all queued premoves (opponent moves ignored)
@@ -1336,6 +1388,7 @@ function physics(t) {
   requestAnimationFrame(physics);
   const dt = Math.min(.033, (t - PHL) / 1000 || 0); PHL = t;
   const lobby = !$('lobby').classList.contains('hide');
+  if (!lobby) return;
   for (const B of BODIES) {
     if (!B.free) continue;
     if (!B.drag && lobby) {
