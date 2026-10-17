@@ -132,8 +132,10 @@ input:focus,select:focus{border-color:var(--g)}
 #rain{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 #lobby::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.55;background-image:radial-gradient(1px 1px at 20px 30px,#fff,transparent),radial-gradient(1.6px 1.6px at 90px 120px,#cfe0ff,transparent),radial-gradient(1px 1px at 160px 70px,#fff,transparent),radial-gradient(1.2px 1.2px at 230px 180px,#bcd,transparent),radial-gradient(1px 1px at 60px 200px,#fff,transparent);background-size:260px 220px;animation:starsdrift 150s linear infinite}
 @keyframes starsdrift{to{background-position:-520px 440px}}
-.pcard{position:relative;cursor:grab;user-select:none;touch-action:none}
-.pcard.free{position:fixed;left:0;top:0;margin:0;z-index:8;animation:none;will-change:transform;cursor:grabbing;box-shadow:0 22px 55px #000c}
+.phys{position:relative;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.pcard{touch-action:none}.dh{touch-action:none;cursor:grab}
+.phys input{user-select:text;-webkit-user-select:text;cursor:text}
+.phys.free{position:fixed;left:0;top:0;margin:0;z-index:8;animation:none;will-change:transform;cursor:grabbing;box-shadow:0 22px 55px #000c}
 .mini{position:absolute;top:8px;right:8px;background:#454240;border:0;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:15px}
 .mini:hover{background:var(--g)}
 .hint2{font-size:12px;color:var(--t);margin-top:-6px}
@@ -173,14 +175,14 @@ input:focus,select:focus{border-color:var(--g)}
 <div id="lobby" class="screen lob hide">
   <div class="top"><b><span class="brand"><i class="kn">♞</i> <i class="" style="--i:0">E</i><i class="" style="--i:1">f</i><i class="" style="--i:2">e</i><i class="gr" style="--i:3">c</i><i class="gr" style="--i:4">i</i><i class="gr" style="--i:5">i</i><i class="gr" style="--i:6">i</i><i class="gr" style="--i:7">s</i></span></b><div class="u"><span class="av" id="tav"></span> <strong id="uname"></strong> · <span id="urate"></span> <button class="btn" id="lo" style="padding:6px 12px;margin-left:10px;font-size:13px">Log out</button></div></div>
   <div class="lgrid">
-    <div class="slot" id="pslot"><div class="card pcard fl1" id="pcard">
+    <div class="slot" id="pslot"><div class="card pcard phys fl1" id="pcard">
       <div class="pav av" id="pav" title="Change avatar"></div>
-      <h2 id="pname"></h2><div class="prate" id="prate"></div><div class="hint2">✋ drag &amp; throw me</div>
+      <h2 id="pname"></h2><div class="prate" id="prate"></div>
       <button class="btn" id="pch">✎ Edit profile</button>
     <button class="mini hide" id="preset" title="Reset position">↺</button>
     </div></div>
-    <div class="card fl2" id="pplay">
-      <h2>Play Chess</h2>
+    <div class="slot" id="qslot"><div class="card phys fl2" id="pplay">
+      <h2 class="dh">Play Chess</h2>
       <div id="tcs"></div>
       <button class="btn big" id="bq">♟️ Play Online</button>
       <button class="btn" id="bb">🤖 Play vs Bot</button>
@@ -188,8 +190,7 @@ input:focus,select:focus{border-color:var(--g)}
       <button class="btn" id="bc">🔗 Create private game</button>
       <div class="row"><input id="code" placeholder="Room code" maxlength="5" style="text-transform:uppercase"><button class="btn" id="bj">Join</button></div>
       <div id="lmsg"></div>
-      <button class="btn red hide" id="bx">Cancel</button>
-    </div>
+      \1<button class="mini hide" id="qreset" title="Reset position">↺</button>\n    </div></div>
   </div>
 </div>
 
@@ -681,62 +682,75 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
 });
 
-/* ---------- lobby: floating profile card you can throw around ---------- */
+/* ---------- lobby: floating cards you can drag & throw ---------- */
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const PH = { x: 0, y: 0, vx: 0, vy: 0, w: 0, h: 0, rot: 0, free: false, drag: false, moved: false, ox: 0, oy: 0, hist: [], t: null, last: 0 };
-const pc = $('pcard');
-pc.addEventListener('pointerdown', e => {
-  if (e.target.closest('button,input')) return;
-  const r = pc.getBoundingClientRect();
-  if (!PH.free) {
-    PH.w = r.width; PH.h = r.height; PH.x = r.left; PH.y = r.top; PH.free = true;
-    $('pslot').style.minHeight = r.height + 'px'; pc.style.width = r.width + 'px'; pc.classList.add('free'); $('preset').classList.remove('hide');
-  }
-  PH.drag = true; PH.moved = false; PH.t = e.target; PH.ox = e.clientX - PH.x; PH.oy = e.clientY - PH.y; PH.vx = PH.vy = 0; PH.hist = [];
-  pc.setPointerCapture(e.pointerId); e.preventDefault();
-});
-pc.addEventListener('pointermove', e => {
-  if (!PH.drag) return;
-  const nx = e.clientX - PH.ox, ny = e.clientY - PH.oy;
-  if (Math.abs(nx - PH.x) + Math.abs(ny - PH.y) > 3) PH.moved = true;
-  PH.x = nx; PH.y = ny; PH.hist.push([performance.now(), e.clientX, e.clientY]); if (PH.hist.length > 6) PH.hist.shift();
-});
-pc.addEventListener('pointerup', () => {
-  if (!PH.drag) return; PH.drag = false;
-  if (!PH.moved) { if (PH.t && PH.t.closest('#pav')) editProfile(); return; }
-  const h = PH.hist;
-  if (h.length > 1 && performance.now() - h[h.length - 1][0] < 90) {
-    const a = h[0], b = h[h.length - 1], dt = Math.max(.016, (b[0] - a[0]) / 1000);
-    PH.vx = Math.max(-2600, Math.min(2600, (b[1] - a[1]) / dt)); PH.vy = Math.max(-2600, Math.min(2600, (b[2] - a[2]) / dt));
-  }
-});
-$('preset').onclick = () => { PH.free = false; PH.vx = PH.vy = 0; pc.classList.remove('free'); pc.style.transform = ''; pc.style.width = ''; $('pslot').style.minHeight = ''; $('preset').classList.add('hide'); };
+const BODIES = [];
+function makeBody(card, slot, resetBtn, handle) {
+  const B = { card, slot, x: 0, y: 0, vx: 0, vy: 0, w: 0, h: 0, rot: 0, free: false, drag: false, moved: false, ox: 0, oy: 0, hist: [], t: null };
+  card.addEventListener('pointerdown', e => {
+    if (e.target.closest('button,input,select')) return;
+    if (handle && e.pointerType === 'touch' && !e.target.closest(handle)) return;
+    const r = card.getBoundingClientRect();
+    if (!B.free) {
+      B.w = r.width; B.h = r.height; B.x = r.left; B.y = r.top; B.free = true;
+      slot.style.minHeight = r.height + 'px'; card.style.width = r.width + 'px'; card.classList.add('free'); resetBtn.classList.remove('hide');
+    }
+    B.drag = true; B.moved = false; B.t = e.target; B.ox = e.clientX - B.x; B.oy = e.clientY - B.y; B.vx = B.vy = 0; B.hist = [];
+    card.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  card.addEventListener('pointermove', e => {
+    if (!B.drag) return;
+    const nx = e.clientX - B.ox, ny = e.clientY - B.oy;
+    if (Math.abs(nx - B.x) + Math.abs(ny - B.y) > 3) B.moved = true;
+    B.x = nx; B.y = ny; B.hist.push([performance.now(), e.clientX, e.clientY]); if (B.hist.length > 6) B.hist.shift();
+  });
+  card.addEventListener('pointerup', () => {
+    if (!B.drag) return; B.drag = false;
+    if (!B.moved) { if (B.t && B.t.closest('#pav')) editProfile(); return; }
+    const h = B.hist;
+    if (h.length > 1 && performance.now() - h[h.length - 1][0] < 90) {
+      const a = h[0], b = h[h.length - 1], dt = Math.max(.016, (b[0] - a[0]) / 1000), c = v => Math.max(-2600, Math.min(2600, v));
+      B.vx = c((b[1] - a[1]) / dt); B.vy = c((b[2] - a[2]) / dt);
+    }
+  });
+  resetBtn.onclick = () => { B.free = false; B.vx = B.vy = 0; card.classList.remove('free'); card.style.transform = ''; card.style.width = ''; slot.style.minHeight = ''; resetBtn.classList.add('hide'); };
+  BODIES.push(B); return B;
+}
+makeBody($('pcard'), $('pslot'), $('preset'));
+makeBody($('pplay'), $('qslot'), $('qreset'), '.dh');
+let PHL = 0;
 function physics(t) {
   requestAnimationFrame(physics);
-  const dt = Math.min(.033, (t - PH.last) / 1000 || 0); PH.last = t;
-  if (!PH.free) return;
+  const dt = Math.min(.033, (t - PHL) / 1000 || 0); PHL = t;
   const lobby = !$('lobby').classList.contains('hide');
-  if (!PH.drag && lobby) {
-    PH.x += PH.vx * dt; PH.y += PH.vy * dt;
-    const k = Math.pow(.992, dt * 60); PH.vx *= k; PH.vy *= k;
-    const W = innerWidth, H = innerHeight, top = 54, e = .85;
-    if (PH.x < 0) { PH.x = 0; PH.vx = Math.abs(PH.vx) * e; } if (PH.x + PH.w > W) { PH.x = W - PH.w; PH.vx = -Math.abs(PH.vx) * e; }
-    if (PH.y < top) { PH.y = top; PH.vy = Math.abs(PH.vy) * e; } if (PH.y + PH.h > H) { PH.y = H - PH.h; PH.vy = -Math.abs(PH.vy) * e; }
-    const o = $('pplay').getBoundingClientRect();
-    if (PH.x < o.right && PH.x + PH.w > o.left && PH.y < o.bottom && PH.y + PH.h > o.top) {
-      const dl = PH.x + PH.w - o.left, dr = o.right - PH.x, dtp = PH.y + PH.h - o.top, db = o.bottom - PH.y, m = Math.min(dl, dr, dtp, db);
-      if (m === dl) { PH.x -= dl; PH.vx = -Math.abs(PH.vx) * e; } else if (m === dr) { PH.x += dr; PH.vx = Math.abs(PH.vx) * e; }
-      else if (m === dtp) { PH.y -= dtp; PH.vy = -Math.abs(PH.vy) * e; } else { PH.y += db; PH.vy = Math.abs(PH.vy) * e; }
+  for (const B of BODIES) {
+    if (!B.free) continue;
+    if (!B.drag && lobby) {
+      B.x += B.vx * dt; B.y += B.vy * dt;
+      const k = Math.pow(.992, dt * 60); B.vx *= k; B.vy *= k;
+      const W = innerWidth, H = innerHeight, top = 54, e = .85;
+      if (B.x < 0) { B.x = 0; B.vx = Math.abs(B.vx) * e; } if (B.x + B.w > W) { B.x = Math.max(0, W - B.w); B.vx = -Math.abs(B.vx) * e; }
+      if (B.y < top) { B.y = top; B.vy = Math.abs(B.vy) * e; } if (B.y + B.h > H) { B.y = Math.max(top, H - B.h); B.vy = -Math.abs(B.vy) * e; }
+      for (const O of BODIES) {
+        if (O === B) continue;
+        const o = O.free ? { left: O.x, top: O.y, right: O.x + O.w, bottom: O.y + O.h } : O.card.getBoundingClientRect();
+        if (!(B.x < o.right && B.x + B.w > o.left && B.y < o.bottom && B.y + B.h > o.top)) continue;
+        const dl = B.x + B.w - o.left, dr = o.right - B.x, dtp = B.y + B.h - o.top, db = o.bottom - B.y, m = Math.min(dl, dr, dtp, db), mv = O.free && !O.drag;
+        if (m === dl) { B.x -= dl; if (mv) [B.vx, O.vx] = [Math.min(O.vx, 0) * e - 60, Math.max(B.vx, 0) * e + 60]; else B.vx = -Math.abs(B.vx) * e; }
+        else if (m === dr) { B.x += dr; if (mv) [B.vx, O.vx] = [Math.max(O.vx, 0) * e + 60, Math.min(B.vx, 0) * e - 60]; else B.vx = Math.abs(B.vx) * e; }
+        else if (m === dtp) { B.y -= dtp; if (mv) [B.vy, O.vy] = [Math.min(O.vy, 0) * e - 60, Math.max(B.vy, 0) * e + 60]; else B.vy = -Math.abs(B.vy) * e; }
+        else { B.y += db; if (mv) [B.vy, O.vy] = [Math.max(O.vy, 0) * e + 60, Math.min(B.vy, 0) * e - 60]; else B.vy = Math.abs(B.vy) * e; }
+      }
     }
+    const tilt = Math.max(-14, Math.min(14, B.vx * .012));
+    B.rot += (tilt - B.rot) * Math.min(1, dt * 8);
+    const bob = RM || B.drag ? 0 : Math.sin(t / 900 + B.w) * 5;
+    B.card.style.transform = `translate(${B.x}px,${B.y + bob}px) rotate(${B.rot}deg)`;
   }
-  const tilt = Math.max(-14, Math.min(14, PH.vx * .012));
-  PH.rot += (tilt - PH.rot) * Math.min(1, dt * 8);
-  const bob = RM || PH.drag ? 0 : Math.sin(t / 900) * 5;
-  pc.style.transform = `translate(${PH.x}px,${PH.y + bob}px) rotate(${PH.rot}deg)`;
 }
 requestAnimationFrame(physics);
 
-/* ---------- rain: bullets / lightning / clocks fall from the sky ---------- */
+/* ---------- weather: bullets / lightning storm / clocks ---------- */
 const RIMG = {};
 for (const n of ['Bullet', 'Blitz', 'Rapid']) {
   const im = new Image();
@@ -744,37 +758,77 @@ for (const n of ['Bullet', 'Blitz', 'Rapid']) {
   RIMG[n] = im;
 }
 const RC = $('rain'), rx = RC.getContext('2d');
-let rP = [], rQueue = null, rBurst = 0, rBurstCat = 'Blitz', rRun = false, rLast = 0, rAcc = 0;
+let rP = [], rBolts = [], rQueue = null, rBurst = 0, rBurstCat = 'Blitz', rRun = false, rLast = 0, rAcc = 0, rAcc2 = 0, rBoltT = 0, rStorm = 0;
 function rSize() { const d = Math.min(devicePixelRatio || 1, 2); RC.width = innerWidth * d; RC.height = innerHeight * d; rx.setTransform(d, 0, 0, d, 0, 0); }
 addEventListener('resize', rSize); rSize();
 function rKick() { if (!rRun) { rRun = true; rLast = performance.now(); requestAnimationFrame(rLoop); } }
-function rainBurst(cat) { if (RM) return; rBurst = 1.8; rBurstCat = cat; rKick(); }
-function rainStart(cat) { if (RM) return; rQueue = cat; rKick(); }
+function rainBurst(cat) { if (RM) return; rBurst = 1.8; rBurstCat = cat; if (cat === 'Blitz') rBoltT = Math.min(rBoltT, .12); rKick(); }
+function rainStart(cat) { if (RM) return; rQueue = cat; if (cat === 'Blitz') rBoltT = Math.min(rBoltT, .3); rKick(); }
 function rainStop() { rQueue = null; }
 function spawn(cat) {
-  const bu = cat === 'Bullet', bl = cat === 'Blitz';
+  const bu = cat === 'Bullet';
   rP.push({ cat, x: Math.random() * innerWidth, y: -50, s: bu ? 20 + Math.random() * 14 : 24 + Math.random() * 18,
-    vy: bu ? 800 + Math.random() * 500 : bl ? 380 + Math.random() * 300 : 170 + Math.random() * 150,
-    rot: bu ? Math.PI + (Math.random() - .5) * .1 : (Math.random() - .5) * .6, vr: cat === 'Rapid' ? (Math.random() - .5) * 2 : 0, ph: Math.random() * 6 });
+    vy: bu ? 800 + Math.random() * 500 : 170 + Math.random() * 150, rot: bu ? Math.PI + (Math.random() - .5) * .1 : (Math.random() - .5) * .6, vr: bu ? 0 : (Math.random() - .5) * 2 });
+}
+function spawnDrop() { rP.push({ drop: true, x: Math.random() * (innerWidth + 200), y: -20, vx: -140, vy: 950 + Math.random() * 500 }); }
+function mkBolt(x0, x1, y1) {
+  const pts = [[x0, -10]], n = Math.max(6, Math.round((y1 + 10) / 22));
+  for (let i = 1; i <= n; i++) pts.push([x0 + (x1 - x0) * i / n + (i < n ? (Math.random() - .5) * 46 : 0), -10 + (y1 + 10) * i / n]);
+  const br = [];
+  for (let k = 0; k < 2; k++) {
+    let [bx, by] = pts[2 + Math.floor(Math.random() * (n - 3))]; const seg = [[bx, by]], d = Math.random() < .5 ? -1 : 1;
+    for (let j = 0; j < 4; j++) { bx += d * (10 + Math.random() * 18); by += 14 + Math.random() * 16; seg.push([bx, by]); }
+    br.push(seg);
+  }
+  return { pts, br, x1, y1, age: 0, life: .55 };
+}
+function strike() {
+  let tx = 60 + Math.random() * (innerWidth - 120), ty = innerHeight * (.45 + Math.random() * .5), card = null;
+  if (Math.random() < .65) {
+    const c = BODIES[Math.floor(Math.random() * BODIES.length)].card, r = c.getBoundingClientRect();
+    if (r.width && r.top > 20) { card = c; tx = r.left + r.width * (.2 + Math.random() * .6); ty = r.top + 4; }
+  }
+  rBolts.push(mkBolt(tx + (Math.random() - .5) * 200, tx, ty));
+  if (card && card.animate) card.animate([{ filter: 'brightness(1)', boxShadow: '0 0 0 #0000' }, { filter: 'brightness(1.7)', boxShadow: '0 0 60px #9cc4ff', offset: .15 }, { filter: 'brightness(1)', boxShadow: '0 0 0 #0000' }], { duration: 420 });
+}
+function drawBolt(b) {
+  const f = b.age < .07 ? 1 : b.age < .13 ? .25 : b.age < .2 ? 1 : Math.max(0, 1 - (b.age - .2) / (b.life - .2));
+  if (b.age < .25) { rx.fillStyle = `rgba(190,210,255,${.3 * (1 - b.age / .25)})`; rx.fillRect(0, 0, innerWidth, innerHeight); }
+  const g = rx.createRadialGradient(b.x1, b.y1, 0, b.x1, b.y1, 110);
+  g.addColorStop(0, `rgba(190,215,255,${.75 * f})`); g.addColorStop(1, 'rgba(190,215,255,0)'); rx.fillStyle = g; rx.fillRect(b.x1 - 110, b.y1 - 110, 220, 220);
+  const path = (pts, w, col) => { rx.beginPath(); pts.forEach((q, i) => i ? rx.lineTo(q[0], q[1]) : rx.moveTo(q[0], q[1])); rx.lineWidth = w; rx.strokeStyle = col; rx.stroke(); };
+  rx.lineJoin = 'round'; rx.shadowColor = '#8fb8ff'; rx.shadowBlur = 20;
+  path(b.pts, 5, `rgba(143,184,255,${.7 * f})`); b.br.forEach(s => path(s, 3, `rgba(143,184,255,${.5 * f})`));
+  rx.shadowBlur = 0; path(b.pts, 2, `rgba(255,255,255,${f})`); b.br.forEach(s => path(s, 1.2, `rgba(255,255,255,${.8 * f})`));
 }
 function rLoop(t) {
   const dt = Math.min(.05, (t - rLast) / 1000); rLast = t;
   const lobby = !$('lobby').classList.contains('hide');
-  if (!lobby) { rP = []; rBurst = 0; }
-  const cat = rBurst > 0 ? rBurstCat : rQueue;
-  if (lobby && cat) { rAcc += dt * (rBurst > 0 ? 45 : 14); while (rAcc >= 1) { rAcc--; spawn(cat); } }
+  if (!lobby) { rP = []; rBolts = []; rBurst = 0; rStorm = 0; }
+  const cat = rBurst > 0 ? rBurstCat : rQueue, storm = lobby && cat === 'Blitz';
+  rStorm += ((storm ? 1 : 0) - rStorm) * Math.min(1, dt * 3);
+  if (lobby && cat) {
+    if (storm) {
+      rAcc2 += dt * (rBurst > 0 ? 170 : 100); while (rAcc2 >= 1) { rAcc2--; spawnDrop(); }
+      rBoltT -= dt; if (rBoltT <= 0) { strike(); rBoltT = rBurst > 0 ? .55 + Math.random() * .4 : 1.1 + Math.random() * 2.2; }
+    } else { rAcc += dt * (rBurst > 0 ? 45 : 14); while (rAcc >= 1) { rAcc--; spawn(cat); } }
+  }
   if (rBurst > 0) rBurst -= dt;
   rx.clearRect(0, 0, innerWidth, innerHeight);
+  if (rStorm > .01) { rx.fillStyle = `rgba(6,10,28,${.38 * rStorm})`; rx.fillRect(0, 0, innerWidth, innerHeight); }
   for (const p of rP) {
-    p.y += p.vy * dt; p.rot += p.vr * dt; p.ph += dt * 12;
+    p.y += p.vy * dt;
+    if (p.drop) { p.x += p.vx * dt; rx.strokeStyle = 'rgba(170,200,255,.4)'; rx.lineWidth = 1.2; rx.beginPath(); rx.moveTo(p.x, p.y); rx.lineTo(p.x + p.vx * .03, p.y + p.vy * .03); rx.stroke(); continue; }
+    p.rot += p.vr * dt;
     const im = RIMG[p.cat]; if (!im.complete || !im.naturalWidth) continue;
-    rx.save(); rx.translate(p.x, p.y); rx.rotate(p.rot);
-    rx.globalAlpha = p.cat === 'Blitz' ? .55 + .45 * Math.abs(Math.sin(p.ph)) : .92;
+    rx.save(); rx.translate(p.x, p.y); rx.rotate(p.rot); rx.globalAlpha = .92;
     if (p.cat === 'Bullet') { rx.globalAlpha = .22; rx.fillStyle = CC.Bullet; rx.fillRect(-1.5, p.s / 2, 3, p.s * 2.6); rx.globalAlpha = .92; }
     rx.drawImage(im, -p.s / 2, -p.s / 2, p.s, p.s); rx.restore();
   }
+  for (const b of rBolts) { b.age += dt; drawBolt(b); }
+  rBolts = rBolts.filter(b => b.age < b.life);
   rP = rP.filter(p => p.y < innerHeight + 60);
-  if (rP.length || cat) requestAnimationFrame(rLoop); else rRun = false;
+  if (rP.length || rBolts.length || cat || rStorm > .02) requestAnimationFrame(rLoop); else rRun = false;
 }
 
 connect();
