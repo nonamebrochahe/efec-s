@@ -246,6 +246,49 @@ input:focus,select:focus{border-color:var(--g)}
  #tri .tp3 .tk{font-size:12px}
  #tri .tp3 .av{width:25px;height:25px;font-size:14px}
 }
+
+/* ===== 3-player UI polish: visible clocks, compact names, clean board, review panel ===== */
+#tri.wide{--s:min(calc(100vw - 650px),calc(100dvh - 170px),720px)}
+#tri .gwrap{gap:14px;align-items:center}
+#tri.wide .side{width:285px;min-width:250px;height:var(--s);margin-top:0;box-shadow:none;border:0}
+#tri .side{border:0;box-shadow:none}
+#tboard{filter:drop-shadow(0 8px 12px #0005)}
+#tri .tp3{min-width:0;max-width:100%;padding:6px 7px;gap:7px;border-left:3px solid color-mix(in srgb,var(--pc),transparent 20%);background:#302d2a;border-radius:6px;box-shadow:none!important;outline:0}
+#tri .tp3.act{background:#3a4233;border-left-width:4px;box-shadow:none!important}
+#tri .tp3 .nm{display:flex;flex-direction:column;min-width:0;flex:1;overflow:hidden;white-space:normal;line-height:1.15}
+#tri .tp3 .uname{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:750}
+#tri .tp3 .nm small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;margin-top:3px}
+#tri .tp3 .tk{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:66px;padding:7px 8px;background:#242321;color:#e7e7e7;border-radius:4px;font:700 17px/1 ui-monospace,Consolas,monospace;letter-spacing:0;border:0;outline:0;box-shadow:none;white-space:nowrap}
+#tri .tp3 .tk.low{background:#a83232;color:#fff}
+#tri .tp3 .av{width:28px;height:28px;flex:none;box-shadow:none;outline:0}
+#tri .tp3.v{max-width:175px;width:175px;padding:6px 7px;border-top:0;border-left:3px solid var(--pc);flex-direction:row;text-align:left}
+#tri .vs{width:175px;max-width:175px;gap:7px;flex:none}
+#tri .tmid{gap:8px}
+#tri .tside{gap:6px}
+#tri .tside .tp3{min-height:48px}
+#tri .side .stat{border-radius:7px 7px 0 0}
+#tri #tmoves{background:#2b2926;min-height:80px}
+#tri #tacts{padding:9px;gap:8px}
+#tri #tacts .btn{flex:1;padding:10px 8px;font-size:14px;box-shadow:none;border:0;outline:0}
+#tri .btn:focus-visible{outline:2px solid #aaa;outline-offset:1px}
+@media(max-width:1200px) and (min-width:1000px){
+ #tri.wide{--s:min(calc(100vw - 560px),calc(100dvh - 190px),600px)}
+ #tri.wide .side{width:245px;min-width:225px}
+ #tri .vs,#tri .tp3.v{width:135px;max-width:135px}
+ #tri .tp3 .tk{min-width:58px;font-size:14px;padding:6px 5px}
+ #tri .tp3 .av{width:24px;height:24px}
+}
+@media(max-width:999px){
+ #tri.wide{--s:min(97vw,calc(100dvh - 250px),680px)}
+ #tri .gwrap{align-items:flex-start}
+ #tri .side{width:var(--s);min-width:0;height:220px;margin:8px auto 0}
+ #tri .tp3 .tk{min-width:57px;font-size:13px;padding:6px 5px}
+ #tri .tp3 .uname{font-size:11px}
+ #tri .tp3 .nm small{font-size:9px}
+ #tri .tp3 .av{width:22px;height:22px;font-size:12px}
+ #tri #tacts{padding:7px}
+}
+
 </style>
 </head>
 <body>
@@ -328,7 +371,7 @@ input:focus,select:focus{border-color:var(--g)}
   <div class="side">
     <div class="stat" id="tstat"></div>
     <div id="tmoves"></div>
-    <div class="acts"><button class="btn red" id="tres">⚑ Resign</button></div>
+    <div class="acts" id="tacts"><button class="btn" id="treview">📊 Review</button><button class="btn red" id="tres">⚑ Resign</button></div>
   </div>
 </div></div>
 
@@ -948,7 +991,7 @@ function tRender() {
     TG.anim = null;
   }
   const wide = innerWidth >= 1000; $('tri').classList.toggle('wide', wide);
-  const pill = (p, v) => `<div class="tp3 ${v ? 'v ' : ''}${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}<small>${TNAME[p]} · ${TG.pl[p].r}</small></div><div class="tk" id="tk${p}">--:--</div></div>`;
+  const pill = (p, v) => `<div class="tp3 ${v ? 'v ' : ''}${st.alive[p] ? '' : 'dead'} ${st.alive[p] && st.turn === p && !TG.over ? 'act' : ''}" style="--pc:${TCOL[p]}"><div class="av" id="tav${p}"></div><div class="nm"><span class="uname" title="${String(TG.pl[p].u).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}">${TG.pl[p].u}${p === TG.idx ? ' (you)' : ''}</span><small>${TNAME[p]} · ${TG.pl[p].r}</small></div><div class="tk" id="tk${p}">--:--</div></div>`;
   const box = { top: '', bottom: '', left: '', right: '' };
   if (wide) for (let p = 0; p < 3; p++) { const sd = tSide(seat, p); box[sd] += pill(p, sd === 'left' || sd === 'right'); }
   else box.bottom = [0, 1, 2].map(p => pill(p, false)).join('');
@@ -1056,6 +1099,14 @@ $('tboard').addEventListener('mouseup',e=>{
 function tAttemptStart(from){ if(!TG)return; TG.sel=from; }
 $('tboard').addEventListener('dragstart',e=>e.preventDefault());
 $('tboard').addEventListener('touchstart',e=>{const el=tSquare(e);if(el && TG && !TG.over){tAttempt(+el.dataset.r,+el.dataset.c);}},{passive:true});
+$('treview').onclick = () => {
+  if (!TG) return;
+  const log = $('tmoves');
+  log.scrollTop = 0;
+  $('tstat').textContent = 'Game review · move history';
+  $('treview').textContent = '↻ All moves';
+  log.style.display = 'block';
+};
 $('tres').onclick = () => {
   if (!TG) return;
   if (TG.over || !TG.st.alive[TG.idx]) return tLeave();
