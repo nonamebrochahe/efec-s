@@ -359,6 +359,31 @@ input:focus,select:focus{border-color:var(--g)}
   #tri .tp3 .nm{width:auto;min-width:0;max-width:none;flex:1 1 0}
   #tri .tp3 .uname,#tri .tp3 .nm small{max-width:100%}
 }
+
+/* ===== ADMIN ===== */
+#admb{position:fixed;right:14px;bottom:14px;z-index:26;width:52px;height:52px;border-radius:50%;border:0;font-size:24px;cursor:pointer;background:linear-gradient(135deg,#e5483f,#f1c40f);box-shadow:0 6px 20px #000a;animation:fl 3s ease-in-out infinite}
+#adm{position:fixed;right:14px;bottom:76px;z-index:26;width:330px;max-width:94vw;max-height:72vh;overflow:auto;background:var(--panel);border:2px solid #e5483f;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 14px 40px #000c}
+#adm h3{font-size:17px}
+#adm .btn{padding:9px 12px;font-size:14px}
+#adm .btn.on{background:var(--g)}
+#adm input{padding:8px 10px;font-size:14px}
+#admg{display:flex;flex-direction:column;gap:6px}
+.aur{display:flex;justify-content:space-between;background:#272522;border-radius:6px;padding:5px 9px;font-size:13px;cursor:pointer}
+.aur:hover{background:#3a3734}.aur small{color:var(--t)}
+#admu{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow:auto}
+#kfx{position:fixed;inset:0;z-index:50;pointer-events:none;display:grid;place-items:center;background:radial-gradient(circle,#0000 20%,#000b);animation:kfade 4.2s both}
+#kfx .kk{font-size:min(48vw,320px);line-height:1;color:#ffd23a;text-shadow:0 0 40px #ff9d00,0 0 90px #ff3b00;animation:kking 4.2s ease-in-out both}
+#kfx .kt{position:absolute;top:9%;left:0;right:0;text-align:center;font:900 clamp(26px,6vw,68px) system-ui,sans-serif;color:#ff3b3b;text-shadow:3px 3px 0 #000;animation:kblink .35s steps(2) infinite}
+#kfx .kp{position:absolute;font-size:clamp(40px,9vw,90px);animation:kpunch .6s ease-out both;animation-delay:var(--dl)}
+@keyframes kking{0%{transform:scale(0) rotate(-200deg)}10%{transform:scale(1.15) rotate(0)}20%{transform:scale(1) rotate(-12deg)}30%{transform:scale(1.1) rotate(12deg)}40%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}60%{transform:scale(1.15) rotate(-8deg)}80%{transform:scale(1.2) rotate(6deg)}100%{transform:scale(1.3) rotate(0);opacity:0}}
+@keyframes kfade{0%{opacity:0}8%{opacity:1}90%{opacity:1}100%{opacity:0}}
+@keyframes kblink{50%{color:#fff}}
+@keyframes kpunch{0%{transform:scale(0) rotate(-30deg);opacity:0}30%{transform:scale(1.5) rotate(10deg);opacity:1}100%{transform:scale(2.2) rotate(-10deg);opacity:0}}
+.kshake{animation:kshk .12s linear infinite!important}
+@keyframes kshk{25%{translate:-6px 3px}50%{translate:5px -4px}75%{translate:-3px -5px}}
+.kfree{overflow:visible!important}
+.kfly{animation:kfly .8s cubic-bezier(.5,0,1,.6) var(--dl) both!important}
+@keyframes kfly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rt)) scale(.2);opacity:0}}
 </style>
 </head>
 <body>
@@ -446,6 +471,17 @@ input:focus,select:focus{border-color:var(--g)}
 </div></div>
 
 <div id="modal" class="hide"><div class="card" id="mc"></div></div>
+<button id="admb" class="hide" title="Admin">🛡️</button>
+<div id="adm" class="hide">
+  <h3>🛡️ Admin abuse</h3>
+  <div id="admg"></div>
+  <div class="cat">Elo change</div>
+  <div class="row"><input id="ae_u" placeholder="username"><input id="ae_r" type="number" placeholder="elo" style="width:90px"><button class="btn" id="ae_go">Set</button></div>
+  <div class="cat">Ban player</div>
+  <div class="row"><input id="ab_u" placeholder="username"><button class="btn red" id="ab_go">Ban</button><button class="btn" id="ab_un">Unban</button></div>
+  <div class="cat">Players (tap to select)</div>
+  <div id="admu"></div>
+</div>
 <div id="toast"></div>
 <canvas id="rain"></canvas>
 
@@ -459,7 +495,7 @@ const PIECES = '';                            // folder of piece images, e.g. 'i
 const C = Chess, T = Tri, $ = id => document.getElementById(id);
 let ws, me = null, G = null, TG = null, mode = 'login', waiting = false, nSel = 2;
 const send = o => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
-const show = id => ['auth', 'lobby', 'game', 'tri'].forEach(x => $(x).classList.toggle('hide', x !== id));
+const show = id => { ['auth', 'lobby', 'game', 'tri'].forEach(x => $(x).classList.toggle('hide', x !== id)); admRefresh(); };
 function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 3200); }
 
 /* ---------- settings (saved in this browser) ---------- */
@@ -507,12 +543,16 @@ function onMsg(m) {
     case 'queued': setWait(true, m.n === 3 ? `Searching for players… (${m.have}/3)` : 'Searching for an opponent…'); break;
     case 'room': setWait(true, `Share this code with your friend${m.n === 3 ? 's' : ''}: ${m.code}` + (m.n === 3 ? ` (${m.have}/3)` : '')); break;
     case 'game': startGame(m); break;
-    case 'move': if (G) { applyWire(m.m); G.clock = m.clock; G.t0 = Date.now(); render(); runPre(); } break;
+    case 'move': if (G) { applyWire(m.m, m.gd); G.clock = m.clock; G.t0 = Date.now(); render(); runPre(); } break;
     case 'draw': toast('Opponent offers a draw – press ½ Draw to accept'); break;
     case 'over': endGame(m); break;
     case 'tgame': startTri(m); break;
     case 'tmove': if (TG && m.id === TG.id) { tApply(m.e, true); TG.clock = m.clock; TG.t0 = Date.now(); tRender(); } break;
     case 'tover': tEnd(m); break;
+    case 'fx': kingRampage(m.by); break;
+    case 'god': if (G) { G.god = m.c; if (m.clock) { G.clock = m.clock; G.t0 = Date.now(); } if (m.c && G.st.turn !== m.c) { G.st = { ...G.st, turn: m.c, ep: null }; G.legal = C.legal(G.st); } render(); toast(m.c ? (G.color === m.c ? '⚡ God turn ON – every turn is yours' : '⚡ Admin took every turn') : 'God turn OFF'); admGame(); } break;
+    case 'banned': toast('You were banned 🔨'); localStorage.removeItem('ctoken'); me = null; G = null; TG = null; show('auth'); break;
+    case 'a_users': admUsers(m.list); break;
   }
 }
 function setWait(on, txt) { waiting = on; $('lmsg').textContent = on ? txt : ''; $('bx').classList.toggle('hide', !on); if (on) rainStart(tcCat); else rainStop(); }
@@ -590,16 +630,16 @@ $('bj').onclick = () => send({ t: 'join', code: $('code').value });
 $('bx').onclick = () => { send({ t: 'cancel' }); setWait(false); };
 
 /* ---------- game ---------- */
-function applyWire(w) {
+function applyWire(w, gd) {
   const m = C.find(G.st, w); if (!m) return;
-  G.san.push(C.san(G.st, m)); G.st = C.apply(G.st, m); G.last = m; G.sel = null; G.arrows = []; G.hls = []; (G.mv || (G.mv = [])).push(w); G.legal = C.legal(G.st);
+  G.san.push(C.san(G.st, m)); G.st = C.apply(G.st, m); if (gd) G.st = { ...G.st, turn: gd, ep: null }; G.last = m; G.sel = null; G.arrows = []; G.hls = []; (G.mv || (G.mv = [])).push(w); G.legal = C.legal(G.st);
   if (G.live) { G.anim = [m]; if (m.ca) G.anim.push({ fr: m.fr, fc: m.ca === 'K' ? 7 : 0, tr: m.tr, tc: m.ca === 'K' ? 5 : 3 }); }
 }
 function startGame(m) {
   setWait(false); TG = null;
   G = { id: m.id, color: m.color, w: m.white, b: m.black, st: C.init(), san: [], last: null, sel: null, over: false };
   G.legal = C.legal(G.st);
-  G.live = false; m.moves.forEach(applyWire); G.live = true; G.intro = true;
+  G.live = false; m.moves.forEach((w, i) => applyWire(w, m.godAt && m.godAt[i])); G.god = m.god || null; if (G.god && G.st.turn !== G.god) { G.st = { ...G.st, turn: G.god, ep: null }; G.legal = C.legal(G.st); } admAutoN = -1; G.live = true; G.intro = true;
   G.clock = m.clock; G.t0 = Date.now();
   $('modal').classList.add('hide'); show('game'); render();
 }
@@ -757,7 +797,7 @@ $('bb').onclick = pickBot;
 function startBot(lv, col) {
   if (col === 'r') col = Math.random() < .5 ? 'w' : 'b';
   const b = BOTS[lv], mp = { u: me.u, r: me.rating, a: me.a, pic: me.pic }, bp = { u: b.n, r: b.e, emoji: b.av };
-  G = { id: 'bot', bot: true, lv, color: col, w: col === 'w' ? mp : bp, b: col === 'w' ? bp : mp, st: C.init(), san: [], last: null, sel: null, over: false, live: true, intro: true, clock: { w: 0, b: 0 }, t0: Date.now() };
+  admAutoN = -1; G = { id: 'bot', bot: true, lv, color: col, w: col === 'w' ? mp : bp, b: col === 'w' ? bp : mp, st: C.init(), san: [], last: null, sel: null, over: false, live: true, intro: true, clock: { w: 0, b: 0 }, t0: Date.now() };
   G.legal = C.legal(G.st); $('modal').classList.add('hide'); show('game'); render();
   if (col === 'b') setTimeout(botMove, 800);
 }
@@ -941,6 +981,7 @@ async function startReview() {
   }
   if (G.rv !== rv) return;
   rv.cls = classify(states, mvs, rv.an, rv.pv);
+  if (me && me.admin) rv.cls.forEach((c, k) => { if ((k % 2 ? 'b' : 'w') === G.color) { c.cls = 'brilliant'; c.eff = 0; c.acc = 100; } });
   rv.ready = true; setRv(0);
 }
 function setRv(i) {
@@ -1402,6 +1443,83 @@ function rLoop(t) {
   rP = rP.filter(p => p.y < innerHeight + 60);
   if (rP.length || rBolts.length || cat || rStorm > .02) requestAnimationFrame(rLoop); else rRun = false;
 }
+
+/* ---------- ADMIN ABUSE ---------- */
+let admAuto = false, admAutoN = -1, admAutoId = null;
+function admRefresh() {
+  const v = !!(me && me.admin && $('auth').classList.contains('hide'));
+  $('admb').classList.toggle('hide', !v); if (!v) $('adm').classList.add('hide');
+}
+function admGame() {
+  const el = $('admg'); let h = '';
+  if (G && !G.rv) {
+    h += '<button class="btn" data-a="hint">💡 Hint (best move)</button>';
+    h += `<button class="btn ${admAuto ? 'on' : ''}" data-a="auto">✨ Auto Brilliant: ${admAuto ? 'ON' : 'OFF'}</button>`;
+    if (!G.bot) h += `<button class="btn ${G.god ? 'on' : ''}" data-a="god">⚡ God turn (every turn mine): ${G.god ? 'ON' : 'OFF'}</button><button class="btn red" data-a="banopp">🔨 Ban opponent</button>`;
+    h += '<button class="btn red" data-a="rampage">👑 King rampage (beat everyone)</button>';
+  } else if (TG) {
+    h += '<button class="btn red" data-a="rampage">👑 King rampage (beat everyone)</button>';
+    TG.pl.forEach((pl, i) => { if (i !== TG.idx) h += `<button class="btn red" data-a="ban3" data-i="${i}">🔨 Ban ${pl.u}</button>`; });
+    h += '<div class="hint2">Hint / auto / god turn: 2-player games only.</div>';
+  } else h = '<div class="hint2">Join a game to unlock game powers.</div>';
+  if (el._h !== h) { el._h = h; el.innerHTML = h; }
+}
+function admUsers(list) {
+  $('admu').innerHTML = (list || []).map(x => `<div class="aur" data-u="${x.u}"><span>${x.on ? '🟢' : '⚪'} ${x.u}</span><small>${x.r}${x.b ? ' · 🚫 banned' : ''}</small></div>`).join('');
+}
+function admHint() {
+  if (!G || G.over || G.rv) return toast('No active game');
+  if (G.st.turn !== G.color) return toast('Wait for your turn');
+  toast('Thinking…');
+  setTimeout(() => {
+    const b = search(G.st, 5, 2000, false); if (!b) return;
+    const sn = C.san(G.st, b);
+    G.arrows = [{ fr: b.fr, fc: b.fc, tr: b.tr, tc: b.tc, col: 'g' }]; G.sel = [b.fr, b.fc]; render();
+    toast('💡 Best move: ' + sn);
+  }, 30);
+}
+function kingRampage() {
+  const o = document.createElement('div'); o.id = 'kfx';
+  o.innerHTML = '<div class="kt">👑 ADMIN ABUSE 👑</div><div class="kk">♚</div>';
+  const em = ['👊', '💥', '🥊', '💢', '⚡'];
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div'); p.className = 'kp'; p.textContent = em[i % em.length];
+    p.style.left = (15 + Math.random() * 70) + '%'; p.style.top = (20 + Math.random() * 60) + '%'; p.style.setProperty('--dl', (0.3 + i * 0.22) + 's'); o.appendChild(p);
+  }
+  document.body.appendChild(o);
+  const boards = [$('board'), $('tboard')].filter(b => b && b.offsetParent);
+  boards.forEach(b => { b.classList.add('kfree', 'kshake'); });
+  document.querySelectorAll('#board img, #tboard img').forEach((im, i) => {
+    const a = Math.random() * 6.283, d = 70 + Math.random() * 60;
+    im.style.setProperty('--dx', Math.cos(a) * d + 'vw'); im.style.setProperty('--dy', Math.sin(a) * d + 'vh');
+    im.style.setProperty('--rt', (Math.random() * 1440 - 720) + 'deg'); im.style.setProperty('--dl', (0.7 + i * 0.07) + 's');
+    im.classList.add('kfly');
+  });
+  setTimeout(() => { o.remove(); boards.forEach(b => b.classList.remove('kshake')); }, 4300);
+}
+$('admb').onclick = () => { const hid = $('adm').classList.toggle('hide'); if (!hid) { admGame(); send({ t: 'a_users' }); } };
+$('admg').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return; const a = b.dataset.a;
+  if (a === 'hint') admHint();
+  else if (a === 'auto') { admAuto = !admAuto; toast('Auto Brilliant ' + (admAuto ? 'ON' : 'OFF')); admGame(); }
+  else if (a === 'god') send({ t: 'a_god', on: !(G && G.god) });
+  else if (a === 'rampage') {
+    if (G && G.bot) { kingRampage(); setTimeout(() => { if (G && !G.over) endGame({ result: G.color === 'w' ? '1-0' : '0-1', reason: 'admin abuse', ratings: { w: me.rating, b: me.rating } }); }, 3800); }
+    else send({ t: 'a_rampage' });
+  }
+  else if (a === 'banopp' && G && !G.bot) send({ t: 'a_ban', u: G.color === 'w' ? G.b.u : G.w.u, on: true });
+  else if (a === 'ban3' && TG) send({ t: 'a_ban', u: TG.pl[+b.dataset.i].u, on: true });
+};
+$('admu').onclick = e => { const r = e.target.closest('.aur'); if (r) { $('ae_u').value = $('ab_u').value = r.dataset.u; } };
+$('ae_go').onclick = () => send({ t: 'a_elo', u: $('ae_u').value.trim(), r: +$('ae_r').value });
+$('ab_go').onclick = () => send({ t: 'a_ban', u: $('ab_u').value.trim(), on: true });
+$('ab_un').onclick = () => send({ t: 'a_ban', u: $('ab_u').value.trim(), on: false });
+setInterval(() => { if (!$('adm').classList.contains('hide')) admGame(); }, 1000);
+setInterval(() => {   // Auto Brilliant: engine plays the best move for the admin
+  if (!admAuto || !me || !me.admin || !G || G.over || G.rv || G.st.turn !== G.color) return;
+  const n = (G.mv || []).length; if (admAutoId === G.id && admAutoN === n) return; admAutoN = n; admAutoId = G.id;
+  const b = search(G.st, 5, 1800, false) || G.legal[0]; if (b) doMove(b);
+}, 900);
 
 connect();
 </script>
